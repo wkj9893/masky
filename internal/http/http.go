@@ -38,17 +38,15 @@ func HandleConn(c *masky.Conn, config masky.Config) {
 		}
 		isocode, err := geoip.Lookup(ip[0])
 		if err != nil {
-			log.Warn("can not lookup ip %v from geoip database", ip[0])
+			log.Warn(err)
 		}
 
 		if isocode == "CN" {
-			dst, err = masky.Dial("tcp", joinHostPort(req.URL.Hostname(), req.URL.Port()))
-			if err != nil {
+			if dst, err = masky.Dial("tcp", joinHostPort(req.URL.Hostname(), req.URL.Port())); err != nil {
 				return
 			}
 		} else {
-			dst, err = masky.ConectRemote(config.Addr)
-			if err != nil {
+			if dst, err = masky.ConectRemote(config.Addr); err != nil {
 				return
 			}
 			local = false
@@ -63,20 +61,22 @@ func HandleConn(c *masky.Conn, config masky.Config) {
 			fmt.Fprintf(c, "%v %v \r\n\r\n", req.Proto, http.StatusOK)
 		} else {
 			if err = req.WriteProxy(dst); err != nil {
-				log.Error("%v", err)
+				log.Error(err)
 				return
 			}
 		}
-		go func() { io.Copy(dst, c) }()
-		go func() { io.Copy(c, dst) }()
+		go masky.Copy(dst, c)
+		go masky.Copy(c, dst)
 		return
 	}
 	defer c.Close()
 	if err = req.WriteProxy(dst); err != nil {
-		log.Error("%v", err)
+		log.Error(err)
 		return
 	}
-	io.Copy(c, dst)
+	if _, err = io.Copy(c, dst); err != nil {
+		log.Error(err)
+	}
 }
 
 func joinHostPort(host string, port string) string {

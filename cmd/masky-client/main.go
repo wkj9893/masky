@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net"
-	"strconv"
 
 	h "github.com/wkj9893/masky/internal/http"
 	"github.com/wkj9893/masky/internal/log"
@@ -17,19 +17,19 @@ func init() {
 	flag.IntVar(&config.Port, "port", 2021, "Listen Port")
 	flag.StringVar(&config.Mode, "mode", "Rule", "Client Mode")
 	flag.BoolVar(&config.Debug, "debug", false, "Debug")
-	flag.StringVar(&config.Addr, "addr", ":2022", "Server Address")
+	flag.StringVar(&config.Addr, "addr", "127.0.0.1:2022", "Server Address")
 	flag.Parse()
 }
 
 func main() {
-	l, err := net.Listen("tcp", ":"+strconv.Itoa(config.Port))
+	l, err := net.Listen("tcp", fmt.Sprint(":", config.Port))
 	if err != nil {
-		log.Error("%v", err)
+		log.Error(err)
 	}
 	for {
 		c, err := l.Accept()
 		if err != nil {
-			log.Error("%v", err)
+			log.Error(err)
 		}
 		go handleConn(c)
 	}
@@ -39,7 +39,6 @@ func handleConn(c net.Conn) {
 	conn := masky.New(c)
 	head, err := conn.Reader().Peek(1)
 	if err != nil {
-		log.Error("%v", err)
 		return
 	}
 	if head[0] == 5 {

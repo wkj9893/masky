@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 
@@ -29,12 +28,13 @@ func init() {
 func main() {
 	l, err := quic.ListenAddr(fmt.Sprintf(":%v", port), q.GenerateTLSConfig(), nil)
 	if err != nil {
-		log.Error("%v", err)
+		log.Error(err)
 	}
 	for {
 		s, err := l.Accept(context.Background())
 		if err != nil {
-			log.Error("%v", err)
+			log.Error(err)
+			return
 		}
 		go handleSession(s)
 	}
@@ -43,45 +43,51 @@ func main() {
 func handleSession(s quic.Session) {
 	stream, err := s.AcceptStream(context.Background())
 	if err != nil {
-		log.Error("%v", err)
+		log.Error(err)
 		return
 	}
 	c := masky.New(stream)
 
 	head, err := c.Reader().Peek(1)
 	if err != nil {
+		log.Error(err)
 		return
 	}
 	if head[0] == 5 { // socks
-		c.Reader().ReadByte()
+		if _, err = c.Reader().ReadByte(); err != nil {
+			log.Error(err)
+			return
+		}
 		addr, err := socks.ReadAddr(c, make([]byte, 256))
 		if err != nil {
-			log.Error("%v", err)
+			log.Error(err)
 			return
 		}
-		log.Info("%s -> %s -> %s", s.RemoteAddr(), s.LocalAddr(), addr)
+		log.Info(fmt.Sprintf("%v -> %v -> %v", s.RemoteAddr(), s.LocalAddr(), addr))
 		dst, err := net.Dial("tcp", addr.String())
 		if err != nil {
-			log.Error("%v", err)
 			return
 		}
-		go func() { io.Copy(dst, c) }()
-		go func() { io.Copy(c, dst) }()
+		go masky.Copy(dst, c)
+		go masky.Copy(c, dst)
 	} else { // http
 		req, err := http.ReadRequest(c.Reader())
 		if err != nil {
 			return
 		}
-		log.Info("%s -> %s -> %s", s.RemoteAddr(), s.LocalAddr(), req.URL.Hostname())
+		log.Info(fmt.Sprintf("%v -> %v -> %v", s.RemoteAddr(), s.LocalAddr(), req.URL.Hostname()))
 		if req.Method == http.MethodConnect {
 			dst, err := net.Dial("tcp", req.Host)
 			if err != nil {
-				fmt.Fprint(c, err)
+				log.Error(err)
 				return
 			}
-			fmt.Fprintf(c, "%v %v \r\n\r\n", req.Proto, http.StatusOK)
-			go func() { io.Copy(dst, c) }()
-			go func() { io.Copy(c, dst) }()
+			if _, err = fmt.Fprintf(c, "%v %v \r\n\r\n", req.Proto, http.StatusOK); err != nil {
+				log.Error(err)
+				return
+			}
+			go masky.Copy(dst, c)
+			go masky.Copy(c, dst)
 			return
 		} else {
 			defer c.Close()
@@ -90,10 +96,12 @@ func handleSession(s quic.Session) {
 			req.RequestURI = ""
 			resp, err := client.Do(req)
 			if err != nil {
-				fmt.Fprint(c, err)
+				log.Error(err)
 				return
 			}
-			resp.Write(c)
+			if err = resp.Write(c); err != nil {
+				log.Error(err)
+			}
 		}
 	}
 }

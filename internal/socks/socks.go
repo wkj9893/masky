@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"strconv"
 
 	"github.com/wkj9893/masky/internal/geoip"
 	"github.com/wkj9893/masky/internal/log"
@@ -24,34 +23,39 @@ const (
 type Addr []byte // RFC 1928 section 5		ATYP + ADDR + PORT
 
 func (addr Addr) String() string {
-	port := strconv.Itoa(256*int(addr[len(addr)-2]) + int(addr[len(addr)-1]))
+	port := fmt.Sprint(256*int(addr[len(addr)-2]) + int(addr[len(addr)-1]))
 	if addr[0] == AtypIPv4 || addr[0] == AtypIPv6 {
-		host := net.IP(addr[1 : len(addr)-2]).String()
-		return net.JoinHostPort(host, port)
+		return net.JoinHostPort(net.IP(addr[1:len(addr)-2]).String(), port)
 	}
-	return fmt.Sprintf("%s:%s", addr[1:len(addr)-2], port)
+	return string(addr[2:len(addr)-2]) + ":" + port
 }
 
 func HandleConn(c *masky.Conn, config masky.Config) {
 	addr, err := Handshake(c)
 	if err != nil {
-		log.Error("%v", err)
+		return
 	}
 	var dst io.ReadWriteCloser
 
 	if config.Mode == mode.Direct {
 		if dst, err = masky.Dial("tcp", addr.String()); err != nil {
+			log.Error(err)
 			return
 		}
 	} else if config.Mode == mode.Global {
 		if dst, err = masky.ConectRemote(config.Addr); err != nil {
+			log.Error(err)
 			return
 		}
-		dst.Write(append([]byte{5}, addr...))
+		if _, err := dst.Write(append([]byte{5}, addr...)); err != nil {
+			log.Error(err)
+			return
+		}
 	} else if config.Mode == mode.Rule {
-		isocode, err := geoip.Lookup(net.IP(addr[1 : len(addr)-2]))
+		isocode, err := lookup(addr)
 		if err != nil {
-			log.Warn("can not lookup ip %v from geoip database", addr)
+			log.Error(err)
+			return
 		}
 		if isocode == "CN" {
 			if dst, err = masky.Dial("tcp", addr.String()); err != nil {
@@ -61,14 +65,16 @@ func HandleConn(c *masky.Conn, config masky.Config) {
 			if dst, err = masky.ConectRemote(config.Addr); err != nil {
 				return
 			}
-			dst.Write(append([]byte{5}, addr...))
+			if _, err = dst.Write(append([]byte{5}, addr...)); err != nil {
+				return
+			}
 		}
 	} else {
 		log.Error("Unknown Mode")
 		return
 	}
-	go func() { io.Copy(dst, c) }()
-	go func() { io.Copy(c, dst) }()
+	go masky.Copy(dst, c)
+	go masky.Copy(c, dst)
 }
 
 func Handshake(rw io.ReadWriter) (Addr, error) {
@@ -97,7 +103,9 @@ func Handshake(rw io.ReadWriter) (Addr, error) {
 	if err != nil {
 		return nil, err
 	}
-	rw.Write([]byte{5, 0, 0, 1, 127, 0, 0, 1, 7, 229})
+	if _, err = rw.Write([]byte{5, 0, 0, 1, 127, 0, 0, 1, 7, 229}); err != nil {
+		return nil, err
+	}
 	return addr, nil
 }
 
@@ -127,4 +135,15 @@ func ReadAddr(r io.Reader, b []byte) (Addr, error) {
 		return b[:net.IPv6len+3], nil
 	}
 	return nil, errors.New("atyp not supported")
+}
+
+func lookup(addr Addr) (string, error) {
+	if addr[0] == AtypDomainName {
+		ip, err := net.LookupIP(string(addr[2 : len(addr)-2]))
+		if err != nil {
+			return "", err
+		}
+		return geoip.Lookup(ip[0])
+	}
+	return geoip.Lookup(net.IP(addr[1 : len(addr)-2]))
 }

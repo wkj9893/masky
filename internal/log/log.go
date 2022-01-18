@@ -3,6 +3,7 @@ package log
 import (
 	"log"
 	"os"
+	"runtime/debug"
 )
 
 type Level int
@@ -33,20 +34,21 @@ func SetLogLevel(l Level) {
 	logLevel = l
 }
 
-func Info(format string, v ...interface{}) {
+func Info(v ...interface{}) {
 	if logLevel <= InfoLevel {
-		infoLogger.Printf(format, v...)
+		infoLogger.Println(v...)
 	}
 }
 
-func Warn(format string, v ...interface{}) {
+func Warn(v ...interface{}) {
 	if logLevel <= WarnLevel {
-		warnLogger.Printf(format, v...)
+		warnLogger.Println(v...)
 	}
 }
 
-func Error(format string, v ...interface{}) {
+func Error(v ...interface{}) {
 	if logLevel <= ErrorLevel {
-		errorLogger.Printf(format, v...)
+		errorLogger.Println(v...)
+		debug.PrintStack()
 	}
 }

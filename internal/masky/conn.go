@@ -48,3 +48,10 @@ func ConectRemote(addr string) (quic.Stream, error) {
 	}
 	return stream, nil
 }
+
+func Copy(dst io.WriteCloser, src io.ReadCloser) {
+	if _, err := io.Copy(dst, src); err != nil {
+		src.Close()
+		dst.Close()
+	}
+}

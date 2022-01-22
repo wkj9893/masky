@@ -54,8 +54,8 @@ func HandleConn(c *masky.Conn, config masky.Config) {
 	} else if config.Mode == mode.Rule {
 		isocode, err := lookup(addr)
 		if err != nil {
-			log.Error(err)
-			return
+			log.Warn(err)
+			isocode = "CN"
 		}
 		if isocode == "CN" {
 			if dst, err = masky.Dial("tcp", addr.String()); err != nil {

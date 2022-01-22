@@ -69,14 +69,11 @@ func HandleConn(c *masky.Conn, config masky.Config) {
 		go masky.Copy(c, dst)
 		return
 	}
-	defer c.Close()
 	if err = req.WriteProxy(dst); err != nil {
 		log.Error(err)
 		return
 	}
-	if _, err = io.Copy(c, dst); err != nil {
-		log.Error(err)
-	}
+	masky.Copy(c, dst)
 }
 
 func joinHostPort(host string, port string) string {

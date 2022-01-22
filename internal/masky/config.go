@@ -1,8 +1,12 @@
 package masky
 
+import (
+	"github.com/wkj9893/masky/internal/log"
+)
+
 type Config struct {
-	Port  int
-	Mode  string // Global Rule Direct
-	Debug bool
-	Addr  string
+	Port     string
+	Mode     string // Global Rule Direct
+	Addr     string
+	LogLevel log.Level
 }

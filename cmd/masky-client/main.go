@@ -1,35 +1,40 @@
 package main
 
 import (
-	"flag"
-	"fmt"
 	"net"
+	"os"
+	"strings"
 
-	h "github.com/wkj9893/masky/internal/http"
+	"github.com/wkj9893/masky/internal/http"
 	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/masky"
+	"github.com/wkj9893/masky/internal/mode"
 	"github.com/wkj9893/masky/internal/socks"
 )
 
 var config masky.Config
 
 func init() {
-	flag.IntVar(&config.Port, "port", 2021, "Listen Port")
-	flag.StringVar(&config.Mode, "mode", "Rule", "Client Mode")
-	flag.BoolVar(&config.Debug, "debug", false, "Debug")
-	flag.StringVar(&config.Addr, "addr", "127.0.0.1:2022", "Server Address")
-	flag.Parse()
+	// default config
+	config = masky.Config{
+		Port:     "2021",
+		Mode:     mode.Rule,
+		Addr:     "127.0.0.1:2022",
+		LogLevel: log.InfoLevel,
+	}
+	parseArgs(os.Args[1:])
 }
 
 func main() {
-	l, err := net.Listen("tcp", fmt.Sprint(":", config.Port))
+	l, err := net.Listen("tcp", ":"+config.Port)
 	if err != nil {
-		log.Error(err)
+		panic(err)
 	}
 	for {
 		c, err := l.Accept()
 		if err != nil {
 			log.Error(err)
+			return
 		}
 		go handleConn(c)
 	}
@@ -44,6 +49,20 @@ func handleConn(c net.Conn) {
 	if head[0] == 5 {
 		socks.HandleConn(conn, config)
 	} else {
-		h.HandleConn(conn, config)
+		http.HandleConn(conn, config)
+	}
+}
+
+func parseArgs(args []string) {
+	for _, arg := range args {
+		switch {
+		case arg == "-h", arg == "--help":
+		case strings.HasPrefix(arg, "--port="):
+			config.Port = arg[len("--port="):]
+		case strings.HasPrefix(arg, "--mode="):
+			config.Mode = arg[len("--mode="):]
+		case strings.HasPrefix(arg, "--addr="):
+			config.Addr = arg[len("--addr="):]
+		}
 	}
 }

@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/wkj9893/masky/internal/log"
@@ -14,19 +15,15 @@ import (
 	"github.com/wkj9893/masky/internal/socks"
 )
 
-var (
-	port int
-	// logLevel int
-)
+var port string
 
 func init() {
-	flag.IntVar(&port, "port", 2022, "Listen Port")
-	// flag.IntVar(&logLevel, "logLevel", 0, "Log Level")
-	flag.Parse()
+	port = "2021"
+	parseArgs(os.Args[1:])
 }
 
 func main() {
-	l, err := quic.ListenAddr(fmt.Sprintf(":%v", port), q.GenerateTLSConfig(), nil)
+	l, err := quic.ListenAddr(":"+port, q.GenerateTLSConfig(), nil)
 	if err != nil {
 		log.Error(err)
 	}
@@ -102,6 +99,16 @@ func handleSession(s quic.Session) {
 			if err = resp.Write(c); err != nil {
 				log.Error(err)
 			}
+		}
+	}
+}
+
+func parseArgs(args []string) {
+	for _, arg := range args {
+		switch {
+		case arg == "-h", arg == "--help":
+		case strings.HasPrefix(arg, "--port="):
+			port = arg[len("--port="):]
 		}
 	}
 }

@@ -6,7 +6,7 @@ import (
 
 type Config struct {
 	Port     string
-	Mode     string // Global Rule Direct
+	Mode     Mode
 	Addr     string
 	LogLevel log.Level
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/wkj9893/masky/internal/geoip"
 	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/masky"
-	"github.com/wkj9893/masky/internal/mode"
 )
 
 func HandleConn(c *masky.Conn, config masky.Config) {
@@ -20,18 +19,18 @@ func HandleConn(c *masky.Conn, config masky.Config) {
 	}
 	var dst io.ReadWriteCloser
 
-	if config.Mode == mode.Direct {
+	if config.Mode == masky.DirectMode {
 		dst, err = masky.Dial("tcp", joinHostPort(req.URL.Hostname(), req.URL.Port()))
 		if err != nil {
 			return
 		}
-	} else if config.Mode == mode.Global {
+	} else if config.Mode == masky.GlobalMode {
 		dst, err = masky.ConectRemote(config.Addr)
 		if err != nil {
 			return
 		}
 		local = false
-	} else if config.Mode == mode.Rule {
+	} else if config.Mode == masky.RuleMode {
 		ip, err := net.LookupIP(req.URL.Hostname())
 		if err != nil {
 			return
@@ -69,11 +68,14 @@ func HandleConn(c *masky.Conn, config masky.Config) {
 		go masky.Copy(c, dst)
 		return
 	}
+	defer c.Close()
 	if err = req.WriteProxy(dst); err != nil {
 		log.Error(err)
 		return
 	}
-	masky.Copy(c, dst)
+	if _, err = io.Copy(c, dst); err != nil {
+		log.Error(err)
+	}
 }
 
 func joinHostPort(host string, port string) string {

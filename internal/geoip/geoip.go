@@ -7,7 +7,7 @@ import (
 )
 
 func Lookup(ip net.IP) (string, error) {
-	db, err := maxminddb.Open("./GeoLite2-Country.mmdb")
+	db, err := maxminddb.Open("./GeoLite2-Country.mmdb") // https://github.com/wkj9893/geoip/releases/latest/download/GeoLite2-Country.mmdb
 	if err != nil {
 		return "", err
 	}

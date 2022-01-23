@@ -9,11 +9,9 @@ import (
 type Level int
 
 const (
-	DebugLevel Level = iota
-	InfoLevel
+	InfoLevel Level = iota
 	WarnLevel
 	ErrorLevel
-	SilentLevel
 )
 
 var (

@@ -8,7 +8,7 @@ import (
 	"github.com/wkj9893/masky/internal/http"
 	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/masky"
-	"github.com/wkj9893/masky/internal/mode"
+
 	"github.com/wkj9893/masky/internal/socks"
 )
 
@@ -18,11 +18,12 @@ func init() {
 	// default config
 	config = masky.Config{
 		Port:     "2021",
-		Mode:     mode.Rule,
+		Mode:     masky.RuleMode,
 		Addr:     "127.0.0.1:2022",
 		LogLevel: log.InfoLevel,
 	}
 	parseArgs(os.Args[1:])
+	log.SetLogLevel(config.LogLevel)
 }
 
 func main() {
@@ -34,7 +35,7 @@ func main() {
 		c, err := l.Accept()
 		if err != nil {
 			log.Error(err)
-			return
+			continue
 		}
 		go handleConn(c)
 	}
@@ -60,9 +61,21 @@ func parseArgs(args []string) {
 		case strings.HasPrefix(arg, "--port="):
 			config.Port = arg[len("--port="):]
 		case strings.HasPrefix(arg, "--mode="):
-			config.Mode = arg[len("--mode="):]
+			mode := arg[len("--mode="):]
+			if mode == "direct" {
+				config.Mode = masky.DirectMode
+			} else if mode == "global" {
+				config.Mode = masky.GlobalMode
+			}
 		case strings.HasPrefix(arg, "--addr="):
 			config.Addr = arg[len("--addr="):]
+		case strings.HasPrefix(arg, "--log="):
+			level := arg[len("--log="):]
+			if level == "warn" {
+				config.LogLevel = log.InfoLevel
+			} else if level == "error" {
+				config.LogLevel = log.ErrorLevel
+			}
 		}
 	}
 }

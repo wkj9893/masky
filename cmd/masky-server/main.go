@@ -11,27 +11,31 @@ import (
 	"github.com/lucas-clemente/quic-go"
 	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/masky"
-	q "github.com/wkj9893/masky/internal/quic"
 	"github.com/wkj9893/masky/internal/socks"
+	"github.com/wkj9893/masky/internal/tls"
 )
 
 var port string
 
 func init() {
-	port = "2021"
+	port = "2022"
 	parseArgs(os.Args[1:])
 }
 
 func main() {
-	l, err := quic.ListenAddr(":"+port, q.GenerateTLSConfig(), nil)
+	tlsConf, err := tls.GenerateTLSConfig()
 	if err != nil {
-		log.Error(err)
+		panic(err)
+	}
+	l, err := quic.ListenAddr(":"+port, tlsConf, nil)
+	if err != nil {
+		panic(err)
 	}
 	for {
 		s, err := l.Accept(context.Background())
 		if err != nil {
 			log.Error(err)
-			return
+			continue
 		}
 		go handleSession(s)
 	}
@@ -88,8 +92,9 @@ func handleSession(s quic.Session) {
 			return
 		} else {
 			defer c.Close()
-			client := http.Client{}
-
+			client := http.Client{Transport: &http.Transport{
+				Proxy: nil, // unset proxy in case recursion
+			}}
 			req.RequestURI = ""
 			resp, err := client.Do(req)
 			if err != nil {

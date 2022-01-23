@@ -9,7 +9,6 @@ import (
 	"github.com/wkj9893/masky/internal/geoip"
 	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/masky"
-	"github.com/wkj9893/masky/internal/mode"
 )
 
 const (
@@ -37,12 +36,12 @@ func HandleConn(c *masky.Conn, config masky.Config) {
 	}
 	var dst io.ReadWriteCloser
 
-	if config.Mode == mode.Direct {
+	if config.Mode == masky.DirectMode {
 		if dst, err = masky.Dial("tcp", addr.String()); err != nil {
 			log.Error(err)
 			return
 		}
-	} else if config.Mode == mode.Global {
+	} else if config.Mode == masky.GlobalMode {
 		if dst, err = masky.ConectRemote(config.Addr); err != nil {
 			log.Error(err)
 			return
@@ -51,7 +50,7 @@ func HandleConn(c *masky.Conn, config masky.Config) {
 			log.Error(err)
 			return
 		}
-	} else if config.Mode == mode.Rule {
+	} else if config.Mode == masky.RuleMode {
 		isocode, err := lookup(addr)
 		if err != nil {
 			log.Warn(err)
@@ -139,11 +138,11 @@ func ReadAddr(r io.Reader, b []byte) (Addr, error) {
 
 func lookup(addr Addr) (string, error) {
 	if addr[0] == AtypDomainName {
-		ip, err := net.LookupIP(string(addr[2 : len(addr)-2]))
+		ip, err := net.ResolveIPAddr("ip", string(addr[2:len(addr)-2]))
 		if err != nil {
 			return "", err
 		}
-		return geoip.Lookup(ip[0])
+		return geoip.Lookup(ip.IP)
 	}
 	return geoip.Lookup(net.IP(addr[1 : len(addr)-2]))
 }

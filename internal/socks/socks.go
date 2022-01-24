@@ -72,8 +72,8 @@ func HandleConn(c *masky.Conn, config masky.Config) {
 		log.Error("Unknown Mode")
 		return
 	}
-	go masky.Copy(dst, c)
 	go masky.Copy(c, dst)
+	go masky.Copy(dst, c)
 }
 
 func Handshake(rw io.ReadWriter) (Addr, error) {

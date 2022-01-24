@@ -69,8 +69,8 @@ func handleSession(s quic.Session) {
 		if err != nil {
 			return
 		}
-		go masky.Copy(dst, c)
 		go masky.Copy(c, dst)
+		go masky.Copy(dst, c)
 	} else { // http
 		req, err := http.ReadRequest(c.Reader())
 		if err != nil {
@@ -87,9 +87,8 @@ func handleSession(s quic.Session) {
 				log.Error(err)
 				return
 			}
-			go masky.Copy(dst, c)
 			go masky.Copy(c, dst)
-			return
+			go masky.Copy(dst, c)
 		} else {
 			defer c.Close()
 			client := http.Client{Transport: &http.Transport{

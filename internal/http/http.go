@@ -64,8 +64,8 @@ func HandleConn(c *masky.Conn, config masky.Config) {
 				return
 			}
 		}
-		go masky.Copy(dst, c)
 		go masky.Copy(c, dst)
+		go masky.Copy(dst, c)
 		return
 	}
 	defer c.Close()

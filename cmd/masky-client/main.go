@@ -58,8 +58,10 @@ func parseArgs(args []string) {
 	for _, arg := range args {
 		switch {
 		case arg == "-h", arg == "--help":
+
 		case strings.HasPrefix(arg, "--port="):
 			config.Port = arg[len("--port="):]
+
 		case strings.HasPrefix(arg, "--mode="):
 			mode := arg[len("--mode="):]
 			if mode == "direct" {
@@ -67,8 +69,10 @@ func parseArgs(args []string) {
 			} else if mode == "global" {
 				config.Mode = masky.GlobalMode
 			}
+
 		case strings.HasPrefix(arg, "--addr="):
 			config.Addr = arg[len("--addr="):]
+
 		case strings.HasPrefix(arg, "--log="):
 			level := arg[len("--log="):]
 			if level == "warn" {

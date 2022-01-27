@@ -36,12 +36,13 @@ func HandleConn(c *masky.Conn, config masky.Config) {
 	}
 	var dst io.ReadWriteCloser
 
-	if config.Mode == masky.DirectMode {
+	switch config.Mode {
+	case masky.DirectMode:
 		if dst, err = masky.Dial("tcp", addr.String()); err != nil {
 			log.Error(err)
 			return
 		}
-	} else if config.Mode == masky.GlobalMode {
+	case masky.GlobalMode:
 		if dst, err = masky.ConectRemote(config.Addr); err != nil {
 			log.Error(err)
 			return
@@ -50,7 +51,7 @@ func HandleConn(c *masky.Conn, config masky.Config) {
 			log.Error(err)
 			return
 		}
-	} else if config.Mode == masky.RuleMode {
+	case masky.RuleMode:
 		isocode, err := lookup(addr)
 		if err != nil {
 			log.Warn(err)
@@ -68,10 +69,8 @@ func HandleConn(c *masky.Conn, config masky.Config) {
 				return
 			}
 		}
-	} else {
-		log.Error("Unknown Mode")
-		return
 	}
+
 	go masky.Copy(c, dst)
 	go masky.Copy(dst, c)
 }

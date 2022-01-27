@@ -83,10 +83,6 @@ func handleSession(s quic.Session) {
 				log.Error(err)
 				return
 			}
-			if _, err = fmt.Fprintf(c, "%v %v \r\n\r\n", req.Proto, http.StatusOK); err != nil {
-				log.Error(err)
-				return
-			}
 			go masky.Copy(c, dst)
 			go masky.Copy(dst, c)
 		} else {

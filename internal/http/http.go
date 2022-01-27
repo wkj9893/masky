@@ -31,15 +31,15 @@ func HandleConn(c *masky.Conn, config masky.Config) {
 		}
 		local = false
 	} else if config.Mode == masky.RuleMode {
-		ip, err := net.LookupIP(req.URL.Hostname())
+		ip, err := net.ResolveIPAddr("ip", req.URL.Hostname())
 		if err != nil {
 			return
 		}
-		isocode, err := geoip.Lookup(ip[0])
+		isocode, err := geoip.Lookup(ip.IP)
 		if err != nil {
 			log.Warn(err)
+			isocode = "CN"
 		}
-
 		if isocode == "CN" {
 			if dst, err = masky.Dial("tcp", joinHostPort(req.URL.Hostname(), req.URL.Port())); err != nil {
 				return
@@ -56,14 +56,13 @@ func HandleConn(c *masky.Conn, config masky.Config) {
 	}
 
 	if req.Method == http.MethodConnect {
-		if local {
-			fmt.Fprintf(c, "%v %v \r\n\r\n", req.Proto, http.StatusOK)
-		} else {
+		if !local {
 			if err = req.WriteProxy(dst); err != nil {
 				log.Error(err)
 				return
 			}
 		}
+		fmt.Fprintf(c, "%v %v \r\n\r\n", req.Proto, http.StatusOK)
 		go masky.Copy(c, dst)
 		go masky.Copy(dst, c)
 		return

@@ -29,21 +29,22 @@ func (addr Addr) String() string {
 	return string(addr[2:len(addr)-2]) + ":" + port
 }
 
-func HandleConn(c *masky.Conn, config masky.Config) {
+func HandleConn(c *masky.Conn, client *masky.Client) {
 	addr, err := Handshake(c)
 	if err != nil {
 		return
 	}
 	var dst io.ReadWriteCloser
 
+	config := client.Config()
 	switch config.Mode {
 	case masky.DirectMode:
-		if dst, err = masky.Dial("tcp", addr.String()); err != nil {
+		if dst, err = net.Dial("tcp", addr.String()); err != nil {
 			log.Error(err)
 			return
 		}
 	case masky.GlobalMode:
-		if dst, err = masky.ConectRemote(config.Addr); err != nil {
+		if dst, err = client.ConectRemote(); err != nil {
 			log.Error(err)
 			return
 		}
@@ -58,11 +59,11 @@ func HandleConn(c *masky.Conn, config masky.Config) {
 			isocode = "CN"
 		}
 		if isocode == "CN" {
-			if dst, err = masky.Dial("tcp", addr.String()); err != nil {
+			if dst, err = net.Dial("tcp", addr.String()); err != nil {
 				return
 			}
 		} else {
-			if dst, err = masky.ConectRemote(config.Addr); err != nil {
+			if dst, err = client.ConectRemote(); err != nil {
 				return
 			}
 			if _, err = dst.Write(append([]byte{5}, addr...)); err != nil {

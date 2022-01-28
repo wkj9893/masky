@@ -16,6 +16,7 @@ import (
 )
 
 var port string
+var s quic.Session
 
 func init() {
 	port = "2022"
@@ -31,22 +32,20 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	s, err = l.Accept(context.Background())
+	if err != nil {
+		panic(err)
+	}
 	for {
-		s, err := l.Accept(context.Background())
+		stream, err := s.AcceptStream(context.Background())
 		if err != nil {
-			log.Error(err)
-			continue
+			panic(err)
 		}
-		go handleSession(s)
+		go handleStream(stream)
 	}
 }
 
-func handleSession(s quic.Session) {
-	stream, err := s.AcceptStream(context.Background())
-	if err != nil {
-		log.Error(err)
-		return
-	}
+func handleStream(stream quic.Stream) {
 	c := masky.New(stream)
 
 	head, err := c.Reader().Peek(1)

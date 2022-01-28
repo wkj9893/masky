@@ -27,6 +27,10 @@ func init() {
 }
 
 func main() {
+	client, err := masky.NewClient(config)
+	if err != nil {
+		panic(err)
+	}
 	l, err := net.Listen("tcp", ":"+config.Port)
 	if err != nil {
 		panic(err)
@@ -37,20 +41,20 @@ func main() {
 			log.Error(err)
 			continue
 		}
-		go handleConn(c)
+		go handleConn(c, client)
 	}
 }
 
-func handleConn(c net.Conn) {
+func handleConn(c net.Conn, client *masky.Client) {
 	conn := masky.New(c)
 	head, err := conn.Reader().Peek(1)
 	if err != nil {
 		return
 	}
 	if head[0] == 5 {
-		socks.HandleConn(conn, config)
+		socks.HandleConn(conn, client)
 	} else {
-		http.HandleConn(conn, config)
+		http.HandleConn(conn, client)
 	}
 }
 

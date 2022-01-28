@@ -2,10 +2,7 @@ package masky
 
 import (
 	"bufio"
-	"crypto/tls"
 	"io"
-
-	"github.com/lucas-clemente/quic-go"
 )
 
 type Conn struct {
@@ -31,22 +28,6 @@ func (c *Conn) Write(b []byte) (n int, err error) {
 
 func (c *Conn) Close() error {
 	return c.rwc.Close()
-}
-
-func ConectRemote(addr string) (quic.Stream, error) {
-	tlsConf := &tls.Config{
-		InsecureSkipVerify: true,
-		NextProtos:         []string{"masky"},
-	}
-	session, err := quic.DialAddr(addr, tlsConf, nil)
-	if err != nil {
-		return nil, err
-	}
-	stream, err := session.OpenStream()
-	if err != nil {
-		return nil, err
-	}
-	return stream, nil
 }
 
 func Copy(dst io.WriteCloser, src io.ReadCloser) {

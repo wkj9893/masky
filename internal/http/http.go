@@ -11,7 +11,7 @@ import (
 	"github.com/wkj9893/masky/internal/masky"
 )
 
-func HandleConn(c *masky.Conn, config masky.Config) {
+func HandleConn(c *masky.Conn, client *masky.Client) {
 	local := true
 	req, err := http.ReadRequest(c.Reader())
 	if err != nil {
@@ -19,18 +19,20 @@ func HandleConn(c *masky.Conn, config masky.Config) {
 	}
 	var dst io.ReadWriteCloser
 
-	if config.Mode == masky.DirectMode {
-		dst, err = masky.Dial("tcp", joinHostPort(req.URL.Hostname(), req.URL.Port()))
+	config := client.Config()
+	switch config.Mode {
+	case masky.DirectMode:
+		dst, err = net.Dial("tcp", joinHostPort(req.URL.Hostname(), req.URL.Port()))
 		if err != nil {
 			return
 		}
-	} else if config.Mode == masky.GlobalMode {
-		dst, err = masky.ConectRemote(config.Addr)
+	case masky.GlobalMode:
+		dst, err = client.ConectRemote()
 		if err != nil {
 			return
 		}
 		local = false
-	} else if config.Mode == masky.RuleMode {
+	case masky.RuleMode:
 		ip, err := net.ResolveIPAddr("ip", req.URL.Hostname())
 		if err != nil {
 			return
@@ -41,18 +43,15 @@ func HandleConn(c *masky.Conn, config masky.Config) {
 			isocode = "CN"
 		}
 		if isocode == "CN" {
-			if dst, err = masky.Dial("tcp", joinHostPort(req.URL.Hostname(), req.URL.Port())); err != nil {
+			if dst, err = net.Dial("tcp", joinHostPort(req.URL.Hostname(), req.URL.Port())); err != nil {
 				return
 			}
 		} else {
-			if dst, err = masky.ConectRemote(config.Addr); err != nil {
+			if dst, err = client.ConectRemote(); err != nil {
 				return
 			}
 			local = false
 		}
-	} else {
-		log.Error("Unknown Mode")
-		return
 	}
 
 	if req.Method == http.MethodConnect {

@@ -9,6 +9,11 @@ import (
 	"math/big"
 )
 
+var DefaultTLSConfig = &tls.Config{
+	InsecureSkipVerify: true,
+	NextProtos:         []string{"masky"},
+}
+
 func GenerateTLSConfig() (*tls.Config, error) {
 	key, err := rsa.GenerateKey(rand.Reader, 1024)
 	if err != nil {

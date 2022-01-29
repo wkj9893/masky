@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 	"os"
 	"strings"
@@ -31,10 +32,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	log.Info("connect to remote server successfully")
 	l, err := net.Listen("tcp", ":"+config.Port)
 	if err != nil {
 		panic(err)
 	}
+	log.Info("client listen on port", config.Port)
 	for {
 		c, err := l.Accept()
 		if err != nil {
@@ -46,7 +49,7 @@ func main() {
 }
 
 func handleConn(c net.Conn, client *masky.Client) {
-	conn := masky.New(c)
+	conn := masky.NewConn(c)
 	head, err := conn.Reader().Peek(1)
 	if err != nil {
 		return
@@ -62,7 +65,7 @@ func parseArgs(args []string) {
 	for _, arg := range args {
 		switch {
 		case arg == "-h", arg == "--help":
-
+			fmt.Println("masky client")
 		case strings.HasPrefix(arg, "--port="):
 			config.Port = arg[len("--port="):]
 

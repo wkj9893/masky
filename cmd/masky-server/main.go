@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -28,7 +27,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	l, err := quic.ListenAddr(":"+port, tlsConf, nil)
+	l, err := quic.ListenAddr(":"+port, tlsConf, masky.DefaultQuicConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -46,7 +45,7 @@ func main() {
 }
 
 func handleStream(stream quic.Stream) {
-	c := masky.New(stream)
+	c := masky.NewConn(stream)
 
 	head, err := c.Reader().Peek(1)
 	if err != nil {
@@ -64,8 +63,9 @@ func handleStream(stream quic.Stream) {
 			return
 		}
 		log.Info(fmt.Sprintf("%v -> %v -> %v", s.RemoteAddr(), s.LocalAddr(), addr))
-		dst, err := net.Dial("tcp", addr.String())
+		dst, err := masky.Dial(addr.String())
 		if err != nil {
+			log.Warn(err)
 			return
 		}
 		go masky.Copy(c, dst)
@@ -73,13 +73,14 @@ func handleStream(stream quic.Stream) {
 	} else { // http
 		req, err := http.ReadRequest(c.Reader())
 		if err != nil {
+			log.Error(err)
 			return
 		}
 		log.Info(fmt.Sprintf("%v -> %v -> %v", s.RemoteAddr(), s.LocalAddr(), req.URL.Hostname()))
 		if req.Method == http.MethodConnect {
-			dst, err := net.Dial("tcp", req.Host)
+			dst, err := masky.Dial(req.Host)
 			if err != nil {
-				log.Error(err)
+				log.Warn(err)
 				return
 			}
 			go masky.Copy(c, dst)
@@ -106,6 +107,7 @@ func parseArgs(args []string) {
 	for _, arg := range args {
 		switch {
 		case arg == "-h", arg == "--help":
+			fmt.Println("masky server")
 		case strings.HasPrefix(arg, "--port="):
 			port = arg[len("--port="):]
 		}

@@ -39,8 +39,8 @@ func HandleConn(c *masky.Conn, client *masky.Client) {
 	config := client.Config()
 	switch config.Mode {
 	case masky.DirectMode:
-		if dst, err = net.Dial("tcp", addr.String()); err != nil {
-			log.Error(err)
+		if dst, err = masky.Dial(addr.String()); err != nil {
+			log.Warn(err)
 			return
 		}
 	case masky.GlobalMode:
@@ -59,7 +59,8 @@ func HandleConn(c *masky.Conn, client *masky.Client) {
 			isocode = "CN"
 		}
 		if isocode == "CN" {
-			if dst, err = net.Dial("tcp", addr.String()); err != nil {
+			if dst, err = masky.Dial(addr.String()); err != nil {
+				log.Warn(err)
 				return
 			}
 		} else {

@@ -17,24 +17,32 @@ func HandleConn(c *masky.Conn, client *masky.Client) {
 	if err != nil {
 		return
 	}
-	var dst io.ReadWriteCloser
 
-	config := client.Config()
-	switch config.Mode {
+	var dst io.ReadWriteCloser
+	host := req.URL.Hostname()
+	port := req.URL.Port()
+	if port == "" {
+		port = "80"
+	}
+
+	switch client.Config().Mode {
 	case masky.DirectMode:
-		dst, err = net.Dial("tcp", joinHostPort(req.URL.Hostname(), req.URL.Port()))
+		dst, err = masky.Dial(net.JoinHostPort(host, port))
 		if err != nil {
+			log.Warn(err)
 			return
 		}
 	case masky.GlobalMode:
 		dst, err = client.ConectRemote()
 		if err != nil {
+			log.Error(err)
 			return
 		}
 		local = false
 	case masky.RuleMode:
 		ip, err := net.ResolveIPAddr("ip", req.URL.Hostname())
 		if err != nil {
+			log.Warn(err)
 			return
 		}
 		isocode, err := geoip.Lookup(ip.IP)
@@ -43,7 +51,8 @@ func HandleConn(c *masky.Conn, client *masky.Client) {
 			isocode = "CN"
 		}
 		if isocode == "CN" {
-			if dst, err = net.Dial("tcp", joinHostPort(req.URL.Hostname(), req.URL.Port())); err != nil {
+			if dst, err = masky.Dial(net.JoinHostPort(host, port)); err != nil {
+				log.Warn(err)
 				return
 			}
 		} else {
@@ -62,8 +71,8 @@ func HandleConn(c *masky.Conn, client *masky.Client) {
 			}
 		}
 		fmt.Fprintf(c, "%v %v \r\n\r\n", req.Proto, http.StatusOK)
-		go masky.Copy(c, dst)
 		go masky.Copy(dst, c)
+		go masky.Copy(c, dst)
 		return
 	}
 	defer c.Close()
@@ -74,11 +83,4 @@ func HandleConn(c *masky.Conn, client *masky.Client) {
 	if _, err = io.Copy(c, dst); err != nil {
 		log.Error(err)
 	}
-}
-
-func joinHostPort(host string, port string) string {
-	if port == "" {
-		port = "80"
-	}
-	return net.JoinHostPort(host, port)
 }

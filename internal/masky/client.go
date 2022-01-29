@@ -22,9 +22,7 @@ func NewClient(config Config) (*Client, error) {
 	c := &Client{
 		config: config,
 	}
-	s, err := quic.DialAddr(c.config.Addr, tls.DefaultTLSConfig, &quic.Config{
-		KeepAlive: true,
-	})
+	s, err := quic.DialAddr(c.config.Addr, tls.DefaultTLSConfig, DefaultQuicConfig)
 	if err != nil {
 		return nil, err
 	}

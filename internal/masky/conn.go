@@ -3,6 +3,8 @@ package masky
 import (
 	"bufio"
 	"io"
+	"net"
+	"time"
 )
 
 type Conn struct {
@@ -10,7 +12,7 @@ type Conn struct {
 	rwc io.ReadWriteCloser
 }
 
-func New(c io.ReadWriteCloser) *Conn {
+func NewConn(c io.ReadWriteCloser) *Conn {
 	return &Conn{r: bufio.NewReader(c), rwc: c}
 }
 
@@ -35,4 +37,10 @@ func Copy(dst io.WriteCloser, src io.ReadCloser) {
 		src.Close()
 		dst.Close()
 	}
+}
+
+const defaultDialTimeout = 5 * time.Second
+
+func Dial(addr string) (net.Conn, error) {
+	return net.DialTimeout("tcp", addr, defaultDialTimeout)
 }

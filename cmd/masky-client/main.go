@@ -49,9 +49,11 @@ func main() {
 }
 
 func handleConn(c net.Conn, client *masky.Client) {
+	defer c.Close()
 	conn := masky.NewConn(c)
 	head, err := conn.Reader().Peek(1)
 	if err != nil {
+		log.Error(err)
 		return
 	}
 	if head[0] == 5 {

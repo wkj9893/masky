@@ -30,14 +30,15 @@ func (addr Addr) String() string {
 }
 
 func HandleConn(c *masky.Conn, client *masky.Client) {
+	defer c.Close()
 	addr, err := Handshake(c)
 	if err != nil {
+		log.Error(err)
 		return
 	}
 	var dst io.ReadWriteCloser
 
-	config := client.Config()
-	switch config.Mode {
+	switch client.Config().Mode {
 	case masky.DirectMode:
 		if dst, err = masky.Dial(addr.String()); err != nil {
 			log.Warn(err)
@@ -65,16 +66,17 @@ func HandleConn(c *masky.Conn, client *masky.Client) {
 			}
 		} else {
 			if dst, err = client.ConectRemote(); err != nil {
+				log.Error(err)
 				return
 			}
 			if _, err = dst.Write(append([]byte{5}, addr...)); err != nil {
+				log.Error(err)
 				return
 			}
 		}
 	}
-
-	go masky.Copy(c, dst)
-	go masky.Copy(dst, c)
+	defer dst.Close()
+	masky.Relay(c, dst)
 }
 
 func Handshake(rw io.ReadWriter) (Addr, error) {

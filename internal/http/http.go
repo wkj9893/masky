@@ -12,9 +12,11 @@ import (
 )
 
 func HandleConn(c *masky.Conn, client *masky.Client) {
+	defer c.Close()
 	local := true
 	req, err := http.ReadRequest(c.Reader())
 	if err != nil {
+		log.Error(err)
 		return
 	}
 
@@ -57,12 +59,14 @@ func HandleConn(c *masky.Conn, client *masky.Client) {
 			}
 		} else {
 			if dst, err = client.ConectRemote(); err != nil {
+				log.Error(err)
 				return
 			}
 			local = false
 		}
 	}
 
+	defer dst.Close()
 	if req.Method == http.MethodConnect {
 		if !local {
 			if err = req.WriteProxy(dst); err != nil {
@@ -71,11 +75,9 @@ func HandleConn(c *masky.Conn, client *masky.Client) {
 			}
 		}
 		fmt.Fprintf(c, "%v %v \r\n\r\n", req.Proto, http.StatusOK)
-		go masky.Copy(dst, c)
-		go masky.Copy(c, dst)
+		masky.Relay(c, dst)
 		return
 	}
-	defer c.Close()
 	if err = req.WriteProxy(dst); err != nil {
 		log.Error(err)
 		return

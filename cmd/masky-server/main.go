@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/wkj9893/masky/internal/log"
@@ -38,13 +39,15 @@ func main() {
 	for {
 		stream, err := s.AcceptStream(context.Background())
 		if err != nil {
-			panic(err)
+			log.Error(err)
+			continue
 		}
-		go handleStream(stream)
+		go handleStream(&masky.Stream{Stream: stream})
 	}
 }
 
-func handleStream(stream quic.Stream) {
+func handleStream(stream *masky.Stream) {
+	defer stream.Close()
 	c := masky.NewConn(stream)
 
 	head, err := c.Reader().Peek(1)
@@ -68,8 +71,7 @@ func handleStream(stream quic.Stream) {
 			log.Warn(err)
 			return
 		}
-		go masky.Copy(c, dst)
-		go masky.Copy(dst, c)
+		masky.Relay(c, dst)
 	} else { // http
 		req, err := http.ReadRequest(c.Reader())
 		if err != nil {
@@ -83,19 +85,16 @@ func handleStream(stream quic.Stream) {
 				log.Warn(err)
 				return
 			}
-			go masky.Copy(c, dst)
-			go masky.Copy(dst, c)
+			masky.Relay(c, dst)
 		} else {
-			defer c.Close()
-			client := http.Client{Transport: &http.Transport{
-				Proxy: nil, // unset proxy in case recursion
-			}}
+			client := http.Client{Timeout: 5 * time.Second}
 			req.RequestURI = ""
 			resp, err := client.Do(req)
 			if err != nil {
 				log.Error(err)
 				return
 			}
+			defer resp.Body.Close()
 			if err = resp.Write(c); err != nil {
 				log.Error(err)
 			}

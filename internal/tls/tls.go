@@ -9,9 +9,11 @@ import (
 	"math/big"
 )
 
+const defaultALPN = "masky"
+
 var DefaultTLSConfig = &tls.Config{
 	InsecureSkipVerify: true,
-	NextProtos:         []string{"masky"},
+	NextProtos:         []string{defaultALPN},
 }
 
 func GenerateTLSConfig() (*tls.Config, error) {
@@ -33,6 +35,6 @@ func GenerateTLSConfig() (*tls.Config, error) {
 	}
 	return &tls.Config{
 		Certificates: []tls.Certificate{tlsCert},
-		NextProtos:   []string{"masky"},
+		NextProtos:   []string{defaultALPN},
 	}, nil
 }

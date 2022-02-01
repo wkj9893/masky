@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -32,15 +33,30 @@ func (c *Conn) Close() error {
 	return c.rwc.Close()
 }
 
-func Copy(dst io.WriteCloser, src io.ReadCloser) {
-	if _, err := io.Copy(dst, src); err != nil {
-		src.Close()
-		dst.Close()
-	}
-}
-
-const defaultDialTimeout = 5 * time.Second
+const (
+	defaultDialTimeout = 5 * time.Second
+)
 
 func Dial(addr string) (net.Conn, error) {
 	return net.DialTimeout("tcp", addr, defaultDialTimeout)
+}
+
+func Relay(left, right io.ReadWriteCloser) {
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		if _, err := io.Copy(left, right); err == nil {
+			left.Close()
+			right.Close()
+		}
+		wg.Done()
+	}()
+	go func() {
+		if _, err := io.Copy(right, left); err == nil {
+			left.Close()
+			right.Close()
+		}
+		wg.Done()
+	}()
+	wg.Wait()
 }

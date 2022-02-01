@@ -34,10 +34,10 @@ func (c *Client) Config() Config {
 	return c.config
 }
 
-func (c *Client) ConectRemote() (quic.Stream, error) {
+func (c *Client) ConectRemote() (*Stream, error) {
 	stream, err := c.session.OpenStream()
 	if err != nil {
 		return nil, err
 	}
-	return stream, nil
+	return &Stream{stream}, nil
 }

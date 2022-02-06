@@ -2,6 +2,7 @@ package masky
 
 import (
 	"github.com/lucas-clemente/quic-go"
+	"github.com/wkj9893/masky/internal/dns"
 	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/tls"
 )
@@ -10,6 +11,7 @@ type Config struct {
 	Port     string
 	Mode     Mode
 	Addr     string
+	Dns      string
 	LogLevel log.Level
 }
 
@@ -19,6 +21,7 @@ type Client struct {
 }
 
 func NewClient(config Config) (*Client, error) {
+	dns.SetResolver(config.Dns)
 	c := &Client{
 		config: config,
 	}

@@ -39,12 +39,11 @@ func main() {
 	}
 	log.Info("client listen on port", config.Port)
 	for {
-		c, err := l.Accept()
-		if err != nil {
+		if c, err := l.Accept(); err != nil {
 			log.Error(err)
-			continue
+		} else {
+			go handleConn(c, client)
 		}
-		go handleConn(c, client)
 	}
 }
 
@@ -81,6 +80,9 @@ func parseArgs(args []string) {
 
 		case strings.HasPrefix(arg, "--addr="):
 			config.Addr = arg[len("--addr="):]
+
+		case strings.HasPrefix(arg, "--dns="):
+			config.Dns = arg[len("--dns="):]
 
 		case strings.HasPrefix(arg, "--log="):
 			level := arg[len("--log="):]

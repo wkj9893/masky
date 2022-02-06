@@ -37,12 +37,11 @@ func main() {
 		panic(err)
 	}
 	for {
-		stream, err := s.AcceptStream(context.Background())
-		if err != nil {
-			log.Error(err)
-			continue
+		if stream, err := s.AcceptStream(context.Background()); err != nil {
+			panic(err)
+		} else {
+			go handleStream(&masky.Stream{Stream: stream})
 		}
-		go handleStream(&masky.Stream{Stream: stream})
 	}
 }
 

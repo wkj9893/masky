@@ -6,7 +6,6 @@ import (
 	"io"
 	"net"
 
-	"github.com/wkj9893/masky/internal/geoip"
 	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/masky"
 )
@@ -33,7 +32,7 @@ func HandleConn(c *masky.Conn, client *masky.Client) {
 	defer c.Close()
 	addr, err := Handshake(c)
 	if err != nil {
-		log.Error(err)
+		log.Warn(err)
 		return
 	}
 	var dst io.ReadWriteCloser
@@ -54,12 +53,7 @@ func HandleConn(c *masky.Conn, client *masky.Client) {
 			return
 		}
 	case masky.RuleMode:
-		isocode, err := lookup(addr)
-		if err != nil {
-			log.Warn(err)
-			isocode = "CN"
-		}
-		if isocode == "CN" {
+		if lookup(addr) == "CN" {
 			if dst, err = masky.Dial(addr.String()); err != nil {
 				log.Warn(err)
 				return
@@ -139,13 +133,10 @@ func ReadAddr(r io.Reader, b []byte) (Addr, error) {
 	return nil, errors.New("atyp not supported")
 }
 
-func lookup(addr Addr) (string, error) {
+func lookup(addr Addr) string {
+	port := fmt.Sprint(256*int(addr[len(addr)-2]) + int(addr[len(addr)-1]))
 	if addr[0] == AtypDomainName {
-		ip, err := net.ResolveIPAddr("ip", string(addr[2:len(addr)-2]))
-		if err != nil {
-			return "", err
-		}
-		return geoip.Lookup(ip.IP)
+		return masky.Lookup(string(addr[2:len(addr)-2]), port)
 	}
-	return geoip.Lookup(net.IP(addr[1 : len(addr)-2]))
+	return masky.Lookup(string(addr[1:len(addr)-2]), port)
 }

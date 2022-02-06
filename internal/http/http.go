@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/wkj9893/masky/internal/geoip"
 	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/masky"
 )
@@ -42,17 +41,7 @@ func HandleConn(c *masky.Conn, client *masky.Client) {
 		}
 		local = false
 	case masky.RuleMode:
-		ip, err := net.ResolveIPAddr("ip", req.URL.Hostname())
-		if err != nil {
-			log.Warn(err)
-			return
-		}
-		isocode, err := geoip.Lookup(ip.IP)
-		if err != nil {
-			log.Warn(err)
-			isocode = "CN"
-		}
-		if isocode == "CN" {
+		if masky.Lookup(host, port) == "CN" {
 			if dst, err = masky.Dial(net.JoinHostPort(host, port)); err != nil {
 				log.Warn(err)
 				return

@@ -2,10 +2,14 @@ package masky
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"net"
 	"sync"
 	"time"
+
+	"github.com/wkj9893/masky/internal/geoip"
+	"github.com/wkj9893/masky/internal/log"
 )
 
 type Conn struct {
@@ -59,4 +63,23 @@ func Relay(left, right io.ReadWriteCloser) {
 		wg.Done()
 	}()
 	wg.Wait()
+}
+
+func Lookup(host string, port string) string {
+	t := time.Now()
+	ip, err := net.ResolveIPAddr("ip", host)
+	if err != nil {
+		log.Warn(err)
+		return ""
+	}
+	if isocode, err := geoip.Lookup(ip.IP); err == nil {
+		fmt.Println(time.Since(t), host, ip, isocode)
+		return isocode
+	}
+	if _, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), 100*time.Millisecond); err == nil {
+		return "CN"
+	} else {
+		log.Warn(err)
+	}
+	return ""
 }

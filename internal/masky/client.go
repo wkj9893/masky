@@ -1,27 +1,22 @@
 package masky
 
 import (
+	"errors"
+
 	"github.com/lucas-clemente/quic-go"
 	"github.com/wkj9893/masky/internal/dns"
-	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/tls"
 )
 
-type Config struct {
-	Port     string
-	Mode     Mode
-	Addr     string
-	Dns      string
-	LogLevel log.Level
-}
-
 type Client struct {
-	config  Config
+	config  ClientConfig
 	session quic.Session
 }
 
-func NewClient(config Config) (*Client, error) {
-	dns.SetResolver(config.Dns)
+func NewClient(config ClientConfig) (*Client, error) {
+	if config.Dns != "" {
+		dns.SetResolver(config.Dns)
+	}
 	c := &Client{
 		config: config,
 	}
@@ -29,11 +24,23 @@ func NewClient(config Config) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	// auth
+	err = s.SendMessage([]byte(c.config.Password))
+	if err != nil {
+		return nil, err
+	}
+	message, err := s.ReceiveMessage()
+	if err != nil {
+		return nil, err
+	}
+	if string(message) != "ok" {
+		return nil, errors.New("fail to auth")
+	}
 	c.session = s
 	return c, nil
 }
 
-func (c *Client) Config() Config {
+func (c *Client) Config() ClientConfig {
 	return c.config
 }
 

@@ -15,37 +15,63 @@ import (
 	"github.com/wkj9893/masky/internal/tls"
 )
 
-var port string
-var s quic.Session
+var config masky.ServerConfig
 
 func init() {
-	port = "2022"
+	// default config
+	config = masky.ServerConfig{
+		Port:     "2022",
+		Password: "",
+		LogLevel: log.InfoLevel,
+	}
 	parseArgs(os.Args[1:])
+	log.SetLogLevel(config.LogLevel)
+}
+
+func check(err error) {
+	if err != nil {
+		log.Error(err)
+		os.Exit(1)
+	}
 }
 
 func main() {
 	tlsConf, err := tls.GenerateTLSConfig()
-	if err != nil {
-		panic(err)
-	}
-	l, err := quic.ListenAddr(":"+port, tlsConf, masky.DefaultQuicConfig)
-	if err != nil {
-		panic(err)
-	}
-	s, err = l.Accept(context.Background())
-	if err != nil {
-		panic(err)
-	}
+	check(err)
+	l, err := quic.ListenAddr(":"+config.Port, tlsConf, masky.DefaultQuicConfig)
+	check(err)
 	for {
-		if stream, err := s.AcceptStream(context.Background()); err != nil {
-			panic(err)
-		} else {
-			go handleStream(&masky.Stream{Stream: stream})
+		s, err := l.Accept(context.Background())
+		if err != nil {
+			continue
+		}
+		// auth
+		password, err := s.ReceiveMessage()
+		if err != nil {
+			continue
+		}
+		if string(password) != config.Password {
+			log.Warn(fmt.Sprintf("auth error: wrong password, want: %s, get: %s", config.Password, password))
+			continue
+		}
+		err = s.SendMessage([]byte("ok"))
+		if err != nil {
+			continue
+		}
+		log.Info(fmt.Sprintf("remote client %v connect to server successfully", s.RemoteAddr()))
+		go handleSession(s)
+	}
+}
+
+func handleSession(s quic.Session) {
+	for {
+		if stream, err := s.AcceptStream(context.Background()); err == nil {
+			go handleStream(&masky.Stream{Stream: stream}, s)
 		}
 	}
 }
 
-func handleStream(stream *masky.Stream) {
+func handleStream(stream *masky.Stream, s quic.Session) {
 	defer stream.Close()
 	c := masky.NewConn(stream)
 
@@ -106,8 +132,20 @@ func parseArgs(args []string) {
 		switch {
 		case arg == "-h", arg == "--help":
 			fmt.Println("masky server")
+
+		case strings.HasPrefix(arg, "--password="):
+			config.Password = arg[len("--password="):]
+
+		case strings.HasPrefix(arg, "--log="):
+			level := arg[len("--log="):]
+			if level == "warn" {
+				config.LogLevel = log.InfoLevel
+			} else if level == "error" {
+				config.LogLevel = log.ErrorLevel
+			}
+
 		case strings.HasPrefix(arg, "--port="):
-			port = arg[len("--port="):]
+			config.Port = arg[len("--port="):]
 		}
 	}
 }

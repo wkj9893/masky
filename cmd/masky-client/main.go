@@ -13,35 +13,37 @@ import (
 	"github.com/wkj9893/masky/internal/socks"
 )
 
-var config masky.Config
+var config masky.ClientConfig
 
 func init() {
 	// default config
-	config = masky.Config{
+	config = masky.ClientConfig{
 		Port:     "2021",
 		Mode:     masky.RuleMode,
 		Addr:     "127.0.0.1:2022",
+		Password: "",
 		LogLevel: log.InfoLevel,
 	}
 	parseArgs(os.Args[1:])
 	log.SetLogLevel(config.LogLevel)
 }
 
+func check(err error) {
+	if err != nil {
+		log.Error(err)
+		os.Exit(1)
+	}
+}
+
 func main() {
 	client, err := masky.NewClient(config)
-	if err != nil {
-		panic(err)
-	}
+	check(err)
 	log.Info("connect to remote server successfully")
 	l, err := net.Listen("tcp", ":"+config.Port)
-	if err != nil {
-		panic(err)
-	}
+	check(err)
 	log.Info("client listen on port", config.Port)
 	for {
-		if c, err := l.Accept(); err != nil {
-			log.Error(err)
-		} else {
+		if c, err := l.Accept(); err == nil {
 			go handleConn(c, client)
 		}
 	}
@@ -83,6 +85,9 @@ func parseArgs(args []string) {
 
 		case strings.HasPrefix(arg, "--dns="):
 			config.Dns = arg[len("--dns="):]
+
+		case strings.HasPrefix(arg, "--password="):
+			config.Password = arg[len("--password="):]
 
 		case strings.HasPrefix(arg, "--log="):
 			level := arg[len("--log="):]

@@ -20,4 +20,5 @@ var DefaultQuicConfig = &quic.Config{
 	MaxConnectionReceiveWindow:     defaultConnectionReceiveWindow,
 	MaxIncomingStreams:             defaultMaxIncomingStreams,
 	KeepAlive:                      true,
+	EnableDatagrams:                true,
 }

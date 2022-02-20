@@ -25,7 +25,7 @@ func (addr Addr) String() string {
 	if addr[0] == AtypIPv4 || addr[0] == AtypIPv6 {
 		return net.JoinHostPort(net.IP(addr[1:len(addr)-2]).String(), port)
 	}
-	return string(addr[2:len(addr)-2]) + ":" + port
+	return net.JoinHostPort(string(addr[2:len(addr)-2]), port)
 }
 
 func HandleConn(c *masky.Conn, client *masky.Client) {
@@ -36,8 +36,13 @@ func HandleConn(c *masky.Conn, client *masky.Client) {
 		return
 	}
 	var dst io.ReadWriteCloser
+	host, port, err := net.SplitHostPort(addr.String())
+	if err != nil {
+		log.Error(err)
+		return
+	}
 
-	switch client.Config().Mode {
+	switch client.Mode() {
 	case masky.DirectMode:
 		if dst, err = masky.Dial(addr.String()); err != nil {
 			log.Warn(err)
@@ -53,9 +58,10 @@ func HandleConn(c *masky.Conn, client *masky.Client) {
 			return
 		}
 	case masky.RuleMode:
-		if lookup(addr) == "CN" {
+		if masky.Lookup(host, port, client) == "CN" {
 			if dst, err = masky.Dial(addr.String()); err != nil {
 				log.Warn(err)
+				client.SetCache(host, "")
 				return
 			}
 		} else {
@@ -131,12 +137,4 @@ func ReadAddr(r io.Reader, b []byte) (Addr, error) {
 		return b[:net.IPv6len+3], nil
 	}
 	return nil, errors.New("atyp not supported")
-}
-
-func lookup(addr Addr) string {
-	port := fmt.Sprint(256*int(addr[len(addr)-2]) + int(addr[len(addr)-1]))
-	if addr[0] == AtypDomainName {
-		return masky.Lookup(string(addr[2:len(addr)-2]), port)
-	}
-	return masky.Lookup(string(addr[1:len(addr)-2]), port)
 }

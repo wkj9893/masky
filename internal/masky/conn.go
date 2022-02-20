@@ -2,7 +2,6 @@ package masky
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -65,21 +64,31 @@ func Relay(left, right io.ReadWriteCloser) {
 	wg.Wait()
 }
 
-func Lookup(host string, port string) string {
-	t := time.Now()
+func lookup(host, port string) (string, error) {
 	ip, err := net.ResolveIPAddr("ip", host)
 	if err != nil {
-		log.Warn(err)
-		return ""
+		return "", err
 	}
-	if isocode, err := geoip.Lookup(ip.IP); err == nil {
-		fmt.Println(time.Since(t), host, ip, isocode)
+	if isocode, err := geoip.Lookup(ip.IP); err == nil && isocode != "" {
+		return isocode, nil
+	}
+	if _, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), 100*time.Millisecond); err != nil {
+		return "", err
+	}
+	return "CN", nil
+}
+
+func Lookup(host, port string, c *Client) string {
+	t := time.Now()
+	if isocode, ok := c.GetCache(host); ok {
+		log.Info(time.Since(t), host, isocode)
 		return isocode
 	}
-	if _, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), 100*time.Millisecond); err == nil {
-		return "CN"
-	} else {
+	isocode, err := lookup(host, port)
+	if err != nil {
 		log.Warn(err)
 	}
-	return ""
+	c.SetCache(host, isocode)
+	log.Info(time.Since(t), host, isocode)
+	return isocode
 }

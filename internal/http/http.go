@@ -26,7 +26,7 @@ func HandleConn(c *masky.Conn, client *masky.Client) {
 		port = "80"
 	}
 
-	switch client.Config().Mode {
+	switch client.Mode() {
 	case masky.DirectMode:
 		dst, err = masky.Dial(net.JoinHostPort(host, port))
 		if err != nil {
@@ -41,9 +41,10 @@ func HandleConn(c *masky.Conn, client *masky.Client) {
 		}
 		local = false
 	case masky.RuleMode:
-		if masky.Lookup(host, port) == "CN" {
+		if masky.Lookup(host, port, client) == "CN" {
 			if dst, err = masky.Dial(net.JoinHostPort(host, port)); err != nil {
 				log.Warn(err)
+				client.SetCache(host, "")
 				return
 			}
 		} else {

@@ -1,12 +1,13 @@
 package log
 
 import (
+	"encoding/json"
 	"log"
 	"os"
 	"runtime/debug"
 )
 
-type Level int
+type Level uint8
 
 const (
 	InfoLevel Level = iota
@@ -48,5 +49,22 @@ func Error(v ...interface{}) {
 	if logLevel <= ErrorLevel {
 		errorLogger.Println(v...)
 		debug.PrintStack()
+	}
+}
+
+func (l Level) MarshalJSON() ([]byte, error) {
+	return json.Marshal(l.String())
+}
+
+func (l Level) String() string {
+	switch l {
+	case InfoLevel:
+		return "info"
+	case WarnLevel:
+		return "warn"
+	case ErrorLevel:
+		return "error"
+	default:
+		return "unknown"
 	}
 }

@@ -28,18 +28,15 @@ func init() {
 	log.SetLogLevel(config.LogLevel)
 }
 
-func check(err error) {
-	if err != nil {
-		log.Error(err)
-		os.Exit(1)
-	}
-}
-
 func main() {
 	tlsConf, err := tls.GenerateTLSConfig()
-	check(err)
+	if err != nil {
+		panic(err)
+	}
 	l, err := quic.ListenAddr(":"+config.Port, tlsConf, masky.DefaultQuicConfig)
-	check(err)
+	if err != nil {
+		panic(err)
+	}
 	for {
 		s, err := l.Accept(context.Background())
 		if err != nil {
@@ -112,7 +109,12 @@ func handleStream(stream *masky.Stream, s quic.Session) {
 			}
 			masky.Relay(c, dst)
 		} else {
-			client := http.Client{Timeout: 5 * time.Second}
+			client := http.Client{
+				CheckRedirect: func(req *http.Request, via []*http.Request) error {
+					return http.ErrUseLastResponse
+				},
+				Timeout: 5 * time.Second,
+			}
 			req.RequestURI = ""
 			resp, err := client.Do(req)
 			if err != nil {
@@ -142,6 +144,8 @@ func parseArgs(args []string) {
 				config.LogLevel = log.InfoLevel
 			} else if level == "error" {
 				config.LogLevel = log.ErrorLevel
+			} else {
+				log.Warn("unknown log option:", level)
 			}
 
 		case strings.HasPrefix(arg, "--port="):

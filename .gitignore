@@ -1,2 +1,2 @@
-masky-client
-masky-server
+cmd/masky-client/masky-client
+cmd/masky-server/masky-server

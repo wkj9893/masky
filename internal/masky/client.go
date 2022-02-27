@@ -67,7 +67,7 @@ func (c *Client) SetConfig(config ClientConfig) {
 func (c *Client) MarshalCache() ([]byte, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	return json.Marshal(c.cache)
+	return json.MarshalIndent(c.cache, "", "  ")
 }
 
 func (c *Client) GetCache(host string) (string, bool) {

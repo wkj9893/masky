@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/wkj9893/masky/internal/api"
@@ -19,10 +20,11 @@ var config masky.ClientConfig
 func init() {
 	// default config
 	config = masky.ClientConfig{
-		Port:     "2021",
+		Port:     2021,
 		Mode:     masky.RuleMode,
 		Addr:     "127.0.0.1:2022",
-		Password: "",
+		Dns:      "8.8.8.8",
+		Password: "masky",
 		AllowLan: true,
 		LogLevel: log.InfoLevel,
 	}
@@ -32,9 +34,9 @@ func init() {
 
 func parseAddr() string {
 	if config.AllowLan {
-		return ":" + config.Port
+		return fmt.Sprintf(":%v", config.Port)
 	}
-	return "127.0.0.1" + ":" + config.Port
+	return fmt.Sprintf("127.0.0.1:%v", config.Port)
 }
 
 func main() {
@@ -48,7 +50,11 @@ func main() {
 		panic(err)
 	}
 	log.Info("client listen on port", config.Port)
-	go api.Start(client)
+	go func() {
+		if err := api.Start(client); err != nil {
+			log.Warn("fail to start api server", err)
+		}
+	}()
 	log.Info("API Server listening at: http://localhost:2022")
 	for {
 		if c, err := l.Accept(); err == nil {
@@ -75,19 +81,19 @@ func handleConn(c net.Conn, client *masky.Client) {
 func parseArgs(args []string) {
 	for _, arg := range args {
 		switch {
-		case arg == "-h", arg == "--help":
-			fmt.Println("masky client")
 		case strings.HasPrefix(arg, "--port="):
-			config.Port = arg[len("--port="):]
+			if n, err := strconv.Atoi(arg[len("--port="):]); err == nil {
+				config.Port = uint16(n)
+			}
 
 		case strings.HasPrefix(arg, "--mode="):
-			mode := arg[len("--mode="):]
-			if mode == "direct" {
+			switch arg[len("--mode="):] {
+			case "direct":
 				config.Mode = masky.DirectMode
-			} else if mode == "global" {
+			case "rule":
+				config.Mode = masky.RuleMode
+			case "global":
 				config.Mode = masky.GlobalMode
-			} else {
-				log.Warn("unknown mode option:", mode)
 			}
 
 		case strings.HasPrefix(arg, "--addr="):
@@ -100,23 +106,21 @@ func parseArgs(args []string) {
 			config.Password = arg[len("--password="):]
 
 		case strings.HasPrefix(arg, "--allowlan="):
-			allowLan := arg[len("--allowlan="):]
-			if allowLan == "false" {
-				config.AllowLan = false
-			} else if allowLan == "true" {
+			switch arg[len("--allowlan="):] {
+			case "true":
 				config.AllowLan = true
-			} else {
-				log.Warn("unknown allownlan option:", allowLan)
+			case "false":
+				config.AllowLan = false
 			}
 
 		case strings.HasPrefix(arg, "--log="):
-			level := arg[len("--log="):]
-			if level == "warn" {
+			switch arg[len("--log="):] {
+			case "info":
 				config.LogLevel = log.InfoLevel
-			} else if level == "error" {
+			case "warn":
+				config.LogLevel = log.WarnLevel
+			case "error":
 				config.LogLevel = log.ErrorLevel
-			} else {
-				log.Warn("unknown log option:", level)
 			}
 		}
 	}

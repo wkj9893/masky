@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,8 +21,8 @@ var config masky.ServerConfig
 func init() {
 	// default config
 	config = masky.ServerConfig{
-		Port:     "2022",
-		Password: "",
+		Port:     2022,
+		Password: "masky",
 		LogLevel: log.InfoLevel,
 	}
 	parseArgs(os.Args[1:])
@@ -33,7 +34,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	l, err := quic.ListenAddr(":"+config.Port, tlsConf, masky.DefaultQuicConfig)
+	l, err := quic.ListenAddr(fmt.Sprintf(":%v", config.Port), tlsConf, masky.DefaultQuicConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -64,6 +65,8 @@ func handleSession(s quic.Session) {
 	for {
 		if stream, err := s.AcceptStream(context.Background()); err == nil {
 			go handleStream(&masky.Stream{Stream: stream}, s)
+		} else {
+			log.Error(err)
 		}
 	}
 }
@@ -132,24 +135,23 @@ func handleStream(stream *masky.Stream, s quic.Session) {
 func parseArgs(args []string) {
 	for _, arg := range args {
 		switch {
-		case arg == "-h", arg == "--help":
-			fmt.Println("masky server")
+		case strings.HasPrefix(arg, "--port="):
+			if n, err := strconv.Atoi(arg[len("--port="):]); err == nil {
+				config.Port = uint16(n)
+			}
 
 		case strings.HasPrefix(arg, "--password="):
 			config.Password = arg[len("--password="):]
 
 		case strings.HasPrefix(arg, "--log="):
-			level := arg[len("--log="):]
-			if level == "warn" {
+			switch arg[len("--log="):] {
+			case "info":
 				config.LogLevel = log.InfoLevel
-			} else if level == "error" {
+			case "warn":
+				config.LogLevel = log.WarnLevel
+			case "error":
 				config.LogLevel = log.ErrorLevel
-			} else {
-				log.Warn("unknown log option:", level)
 			}
-
-		case strings.HasPrefix(arg, "--port="):
-			config.Port = arg[len("--port="):]
 		}
 	}
 }

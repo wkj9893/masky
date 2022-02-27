@@ -15,18 +15,10 @@ var (
 	config masky.ClientConfig
 )
 
-func hello(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello Masky")
-}
-
-func logs(w http.ResponseWriter, r *http.Request) {
-
-}
-
 func configs(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		c, err := json.Marshal(config)
+		c, err := json.MarshalIndent(config, "", "  ")
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, err)
@@ -35,7 +27,7 @@ func configs(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, string(c))
 
-	case http.MethodPost:
+	case http.MethodPatch:
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -68,14 +60,11 @@ func cache(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, string(cache))
 }
 
-func Start(c *masky.Client) {
+func Start(c *masky.Client) error {
 	client = c
 	config = client.GetConfig()
-	http.HandleFunc("/", hello)
-	http.HandleFunc("/logs", logs)
-	http.HandleFunc("/configs", configs)
-	http.HandleFunc("/cache", cache)
-	if err := http.ListenAndServe("127.0.0.1:2022", nil); err != nil {
-		log.Error(err)
-	}
+	http.Handle("/", http.FileServer(http.Dir("../../web/build")))
+	http.HandleFunc("/api/configs", configs)
+	http.HandleFunc("/api/cache", cache)
+	return http.ListenAndServe("127.0.0.1:2022", nil)
 }

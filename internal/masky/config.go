@@ -5,7 +5,7 @@ import (
 )
 
 type ClientConfig struct {
-	Port     string    `json:"port"`
+	Port     uint16    `json:"port"`
 	Mode     Mode      `json:"mode"`
 	Addr     string    `json:"addr"`
 	Dns      string    `json:"dns"`
@@ -15,7 +15,7 @@ type ClientConfig struct {
 }
 
 type ServerConfig struct {
-	Port     string
+	Port     uint16
 	Password string
 	LogLevel log.Level
 }

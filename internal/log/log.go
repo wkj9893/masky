@@ -24,9 +24,9 @@ var (
 )
 
 func init() {
-	infoLogger = log.New(os.Stdout, "INFO: ", 0)
-	warnLogger = log.New(os.Stdout, "WARNING: ", 0)
-	errorLogger = log.New(os.Stdout, "ERROR: ", 0)
+	infoLogger = log.New(os.Stdout, "INFO: ", log.Ltime)
+	warnLogger = log.New(os.Stdout, "WARNING: ", log.Ltime)
+	errorLogger = log.New(os.Stdout, "ERROR: ", log.Ltime)
 }
 
 func SetLogLevel(l Level) {

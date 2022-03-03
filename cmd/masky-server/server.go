@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -41,74 +42,83 @@ func main() {
 	for {
 		s, err := l.Accept(context.Background())
 		if err != nil {
-			continue
+			panic(err)
 		}
-		// auth
-		password, err := s.ReceiveMessage()
-		if err != nil {
-			continue
-		}
-		if string(password) != config.Password {
-			log.Warn(fmt.Sprintf("auth error: wrong password, want: %s, get: %s", config.Password, password))
-			continue
-		}
-		err = s.SendMessage([]byte("ok"))
-		if err != nil {
-			continue
+		if err := auth(s); err != nil {
+			_ = s.CloseWithError(masky.DefaultApplicationErrorCode, err.Error())
 		}
 		log.Info(fmt.Sprintf("remote client %v connect to server successfully", s.RemoteAddr()))
 		go handleSession(s)
 	}
 }
 
+func auth(s quic.Session) error {
+	password, err := s.ReceiveMessage()
+	if err != nil {
+		return err
+	}
+	if string(password) != config.Password {
+		log.Warn(fmt.Sprintf("auth error: wrong password, want: %s, get: %s", config.Password, password))
+		return err
+	}
+	err = s.SendMessage([]byte("ok"))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func handleSession(s quic.Session) {
 	for {
 		if stream, err := s.AcceptStream(context.Background()); err == nil {
-			go handleStream(&masky.Stream{Stream: stream}, s)
+			go func() {
+				if err := handleStream(&masky.Stream{Stream: stream}, s); err != nil {
+					log.Error(err)
+				}
+			}()
 		} else {
-			log.Error(err)
+			var timeoutError *quic.IdleTimeoutError
+			if !errors.As(err, &timeoutError) {
+				log.Error(err)
+				_ = s.CloseWithError(masky.DefaultApplicationErrorCode, err.Error())
+			}
+			return
 		}
 	}
 }
 
-func handleStream(stream *masky.Stream, s quic.Session) {
+func handleStream(stream *masky.Stream, s quic.Session) error {
 	defer stream.Close()
 	c := masky.NewConn(stream)
 
 	head, err := c.Reader().Peek(1)
 	if err != nil {
-		log.Error(err)
-		return
+		return err
 	}
 	if head[0] == 5 { // socks
 		if _, err = c.Reader().ReadByte(); err != nil {
-			log.Error(err)
-			return
+			return err
 		}
 		addr, err := socks.ReadAddr(c, make([]byte, 256))
 		if err != nil {
-			log.Error(err)
-			return
+			return err
 		}
 		log.Info(fmt.Sprintf("%v -> %v -> %v", s.RemoteAddr(), s.LocalAddr(), addr))
 		dst, err := masky.Dial(addr.String())
 		if err != nil {
-			log.Warn(err)
-			return
+			return err
 		}
 		masky.Relay(c, dst)
 	} else { // http
 		req, err := http.ReadRequest(c.Reader())
 		if err != nil {
-			log.Error(err)
-			return
+			return err
 		}
 		log.Info(fmt.Sprintf("%v -> %v -> %v", s.RemoteAddr(), s.LocalAddr(), req.URL.Hostname()))
 		if req.Method == http.MethodConnect {
 			dst, err := masky.Dial(req.Host)
 			if err != nil {
-				log.Warn(err)
-				return
+				return err
 			}
 			masky.Relay(c, dst)
 		} else {
@@ -121,15 +131,15 @@ func handleStream(stream *masky.Stream, s quic.Session) {
 			req.RequestURI = ""
 			resp, err := client.Do(req)
 			if err != nil {
-				log.Error(err)
-				return
+				return err
 			}
 			defer resp.Body.Close()
 			if err = resp.Write(c); err != nil {
-				log.Error(err)
+				return err
 			}
 		}
 	}
+	return nil
 }
 
 func parseArgs(args []string) {

@@ -6,17 +6,15 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/masky"
 )
 
-func HandleConn(c *masky.Conn, client *masky.Client) {
+func HandleConn(c *masky.Conn, client *masky.Client) error {
 	defer c.Close()
 	local := true
 	req, err := http.ReadRequest(c.Reader())
 	if err != nil {
-		log.Error(err)
-		return
+		return err
 	}
 
 	var dst io.ReadWriteCloser
@@ -30,27 +28,22 @@ func HandleConn(c *masky.Conn, client *masky.Client) {
 	case masky.DirectMode:
 		dst, err = masky.Dial(net.JoinHostPort(host, port))
 		if err != nil {
-			log.Warn(err)
-			return
+			return err
 		}
 	case masky.GlobalMode:
 		dst, err = client.ConectRemote()
 		if err != nil {
-			log.Error(err)
-			return
+			return err
 		}
 		local = false
 	case masky.RuleMode:
 		if masky.Lookup(host, port, client) == "CN" {
 			if dst, err = masky.Dial(net.JoinHostPort(host, port)); err != nil {
-				log.Warn(err)
-				client.SetCache(host, "")
-				return
+				return err
 			}
 		} else {
 			if dst, err = client.ConectRemote(); err != nil {
-				log.Error(err)
-				return
+				return err
 			}
 			local = false
 		}
@@ -60,19 +53,18 @@ func HandleConn(c *masky.Conn, client *masky.Client) {
 	if req.Method == http.MethodConnect {
 		if !local {
 			if err = req.WriteProxy(dst); err != nil {
-				log.Error(err)
-				return
+				return err
 			}
 		}
 		fmt.Fprintf(c, "%v %v \r\n\r\n", req.Proto, http.StatusOK)
 		masky.Relay(c, dst)
-		return
+		return nil
 	}
 	if err = req.WriteProxy(dst); err != nil {
-		log.Error(err)
-		return
+		return err
 	}
 	if _, err = io.Copy(c, dst); err != nil {
-		log.Error(err)
+		return err
 	}
+	return nil
 }

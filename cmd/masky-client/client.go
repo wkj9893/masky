@@ -15,7 +15,10 @@ import (
 	"github.com/wkj9893/masky/internal/socks"
 )
 
-var config masky.ClientConfig
+var (
+	config    masky.ClientConfig
+	localAddr string
+)
 
 func init() {
 	// default config
@@ -30,13 +33,11 @@ func init() {
 	}
 	parseArgs(os.Args[1:])
 	log.SetLogLevel(config.LogLevel)
-}
-
-func parseAddr() string {
 	if config.AllowLan {
-		return fmt.Sprintf(":%v", config.Port)
+		localAddr = fmt.Sprintf(":%v", config.Port)
+	} else {
+		localAddr = fmt.Sprintf("127.0.0.1:%v", config.Port)
 	}
-	return fmt.Sprintf("127.0.0.1:%v", config.Port)
 }
 
 func main() {
@@ -45,7 +46,7 @@ func main() {
 		panic(err)
 	}
 	log.Info("connect to remote server successfully")
-	l, err := net.Listen("tcp", parseAddr())
+	l, err := net.Listen("tcp", localAddr)
 	if err != nil {
 		panic(err)
 	}
@@ -59,6 +60,8 @@ func main() {
 	for {
 		if c, err := l.Accept(); err == nil {
 			go handleConn(c, client)
+		} else {
+			log.Error(err)
 		}
 	}
 }
@@ -72,9 +75,13 @@ func handleConn(c net.Conn, client *masky.Client) {
 		return
 	}
 	if head[0] == 5 {
-		socks.HandleConn(conn, client)
+		if err := socks.HandleConn(conn, client); err != nil {
+			log.Error(err)
+		}
 	} else {
-		http.HandleConn(conn, client)
+		if err := http.HandleConn(conn, client); err != nil {
+			log.Error(err)
+		}
 	}
 }
 

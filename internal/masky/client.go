@@ -7,7 +7,6 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/wkj9893/masky/internal/dns"
-	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/tls"
 )
 
@@ -30,20 +29,24 @@ func NewClient(config ClientConfig) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	// auth
-	err = s.SendMessage([]byte(c.config.Password))
-	if err != nil {
-		return nil, err
-	}
-	message, err := s.ReceiveMessage()
-	if err != nil {
-		return nil, err
-	}
-	if string(message) != "ok" {
-		return nil, errors.New("fail to auth")
-	}
 	c.session = s
+	if err := c.auth(); err != nil {
+		_ = c.session.CloseWithError(DefaultApplicationErrorCode, err.Error())
+		return nil, err
+	}
 	return c, nil
+}
+
+func (c *Client) auth() error {
+	if err := c.session.SendMessage([]byte(c.config.Password)); err != nil {
+		return err
+	}
+	if message, err := c.session.ReceiveMessage(); err != nil {
+		return err
+	} else if string(message) != "ok" {
+		return errors.New("fail to auth")
+	}
+	return nil
 }
 
 func (c *Client) Mode() Mode {
@@ -70,7 +73,7 @@ func (c *Client) MarshalCache() ([]byte, error) {
 	return json.MarshalIndent(c.cache, "", "  ")
 }
 
-func (c *Client) GetCache(host string) (string, bool) {
+func (c *Client) GetFromCache(host string) (string, bool) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	isocode, ok := c.cache[host]
@@ -84,22 +87,30 @@ func (c *Client) SetCache(host, isocode string) {
 }
 
 func (c *Client) ConectRemote() (*Stream, error) {
-	stream, err := c.session.OpenStream()
-	if err == nil {
+	if stream, err := c.session.OpenStream(); err == nil {
 		return &Stream{stream}, nil
-	}
-	log.Warn(err)
-	newClient, err := NewClient(c.config)
-	if err != nil {
+	} else {
 		return nil, err
 	}
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	c.session = newClient.session
-	stream, err = c.session.OpenStream()
-	if err != nil {
-		return nil, err
-	}
-	log.Info("reconnect server successfully")
-	return &Stream{stream}, nil
+	// try to reconnect server
+	// if err := c.reconnect(); err != nil {
+	// 	return nil, err
+	// }
+	// if stream, err := c.session.OpenStream(); err == nil {
+	// 	return &Stream{stream}, nil
+	// } else {
+	// 	return nil, err
+	// }
 }
+
+// func (c *Client) reconnect() error {
+// 	newClient, err := NewClient(c.config)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	c.mutex.Lock()
+// 	defer c.mutex.Unlock()
+// 	c.session = newClient.session
+// 	log.Info("reconnect server successfully")
+// 	return nil
+// }

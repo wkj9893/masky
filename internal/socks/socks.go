@@ -6,7 +6,6 @@ import (
 	"io"
 	"net"
 
-	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/masky"
 )
 
@@ -28,55 +27,47 @@ func (addr Addr) String() string {
 	return net.JoinHostPort(string(addr[2:len(addr)-2]), port)
 }
 
-func HandleConn(c *masky.Conn, client *masky.Client) {
+func HandleConn(c *masky.Conn, client *masky.Client) error {
 	defer c.Close()
 	addr, err := Handshake(c)
 	if err != nil {
-		log.Warn(err)
-		return
+		return err
 	}
 	var dst io.ReadWriteCloser
 	host, port, err := net.SplitHostPort(addr.String())
 	if err != nil {
-		log.Error(err)
-		return
+		return err
 	}
 
 	switch client.Mode() {
 	case masky.DirectMode:
 		if dst, err = masky.Dial(addr.String()); err != nil {
-			log.Warn(err)
-			return
+			return err
 		}
 	case masky.GlobalMode:
 		if dst, err = client.ConectRemote(); err != nil {
-			log.Error(err)
-			return
+			return err
 		}
 		if _, err := dst.Write(append([]byte{5}, addr...)); err != nil {
-			log.Error(err)
-			return
+			return err
 		}
 	case masky.RuleMode:
 		if masky.Lookup(host, port, client) == "CN" {
 			if dst, err = masky.Dial(addr.String()); err != nil {
-				log.Warn(err)
-				client.SetCache(host, "")
-				return
+				return err
 			}
 		} else {
 			if dst, err = client.ConectRemote(); err != nil {
-				log.Error(err)
-				return
+				return err
 			}
 			if _, err = dst.Write(append([]byte{5}, addr...)); err != nil {
-				log.Error(err)
-				return
+				return err
 			}
 		}
 	}
 	defer dst.Close()
 	masky.Relay(c, dst)
+	return nil
 }
 
 func Handshake(rw io.ReadWriter) (Addr, error) {

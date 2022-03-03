@@ -36,6 +36,5 @@ func GenerateTLSConfig() (*tls.Config, error) {
 	return &tls.Config{
 		Certificates: []tls.Certificate{tlsCert},
 		NextProtos:   []string{defaultALPN},
-		// MinVersion:   tls.VersionTLS13,
 	}, nil
 }

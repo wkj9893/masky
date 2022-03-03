@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/wkj9893/masky/internal/log"
@@ -30,17 +29,6 @@ func Test_parseArgs(t *testing.T) {
 	}
 	parseArgs(tests[3])
 	if config.Mode != masky.GlobalMode || config.LogLevel != log.ErrorLevel {
-		t.FailNow()
-	}
-}
-
-func Test_parseAddr(t *testing.T) {
-	config.AllowLan = true
-	if parseAddr() != fmt.Sprintf(":%v", config.Port) {
-		t.FailNow()
-	}
-	config.AllowLan = false
-	if parseAddr() != fmt.Sprintf("127.0.0.1:%v", config.Port) {
 		t.FailNow()
 	}
 }

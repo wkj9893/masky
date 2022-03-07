@@ -66,5 +66,5 @@ func Start(c *masky.Client) error {
 	http.Handle("/", http.FileServer(http.Dir("../../web/build")))
 	http.HandleFunc("/api/configs", configs)
 	http.HandleFunc("/api/cache", cache)
-	return http.ListenAndServe("127.0.0.1:2022", nil)
+	return http.ListenAndServe("127.0.0.1:1081", nil)
 }

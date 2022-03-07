@@ -23,10 +23,10 @@ var (
 func init() {
 	// default config
 	config = masky.ClientConfig{
-		Port:     2021,
+		Port:     1080,
 		Mode:     masky.RuleMode,
-		Addr:     "127.0.0.1:2022",
-		Dns:      "8.8.8.8",
+		Addr:     "127.0.0.1:1080",
+		Dns:      "",
 		Password: "masky",
 		AllowLan: true,
 		LogLevel: log.InfoLevel,
@@ -56,12 +56,12 @@ func main() {
 			log.Warn("fail to start api server", err)
 		}
 	}()
-	log.Info("API Server listening at: http://localhost:2022")
+	log.Info("API Server listening at: http://localhost:1081")
 	for {
 		if c, err := l.Accept(); err == nil {
 			go handleConn(c, client)
 		} else {
-			log.Error(err)
+			panic(err)
 		}
 	}
 }
@@ -76,11 +76,11 @@ func handleConn(c net.Conn, client *masky.Client) {
 	}
 	if head[0] == 5 {
 		if err := socks.HandleConn(conn, client); err != nil {
-			log.Error(err)
+			log.Warn(err)
 		}
 	} else {
 		if err := http.HandleConn(conn, client); err != nil {
-			log.Error(err)
+			log.Warn(err)
 		}
 	}
 }

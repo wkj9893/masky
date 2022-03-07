@@ -74,23 +74,24 @@ func lookup(host, port string) (string, error) {
 			return isocode, nil
 		}
 	}
-	if _, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), 100*time.Millisecond); err != nil {
-		return "", err
+	if _, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), 200*time.Millisecond); err == nil {
+		return "CN", nil
 	}
-	return "CN", nil
+	return "", nil
 }
 
-func Lookup(host, port string, c *Client) string {
+func Lookup(host, port string, c *Client) (string, error) {
 	t := time.Now()
 	if isocode, ok := c.GetFromCache(host); ok {
-		log.Info(time.Since(t), host, isocode)
-		return isocode
+		log.Info("get from cache:", host, isocode, time.Since(t))
+		return isocode, nil
 	}
 	isocode, err := lookup(host, port)
 	if err != nil {
-		log.Warn(err)
+		// lookup host error: no such host
+		return "", err
 	}
 	c.SetCache(host, isocode)
-	log.Info(time.Since(t), host, isocode)
-	return isocode
+	log.Info("lookup host:", host, isocode, time.Since(t))
+	return isocode, nil
 }

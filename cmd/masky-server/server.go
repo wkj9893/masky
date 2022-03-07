@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -22,7 +21,7 @@ var config masky.ServerConfig
 func init() {
 	// default config
 	config = masky.ServerConfig{
-		Port:     2022,
+		Port:     1080,
 		Password: "masky",
 		LogLevel: log.InfoLevel,
 	}
@@ -45,6 +44,7 @@ func main() {
 			panic(err)
 		}
 		if err := auth(s); err != nil {
+			log.Error(err)
 			_ = s.CloseWithError(masky.DefaultApplicationErrorCode, err.Error())
 		}
 		log.Info(fmt.Sprintf("remote client %v connect to server successfully", s.RemoteAddr()))
@@ -69,21 +69,17 @@ func auth(s quic.Session) error {
 }
 
 func handleSession(s quic.Session) {
+	defer s.CloseWithError(masky.DefaultApplicationErrorCode, "")
 	for {
-		if stream, err := s.AcceptStream(context.Background()); err == nil {
-			go func() {
-				if err := handleStream(&masky.Stream{Stream: stream}, s); err != nil {
-					log.Error(err)
-				}
-			}()
-		} else {
-			var timeoutError *quic.IdleTimeoutError
-			if !errors.As(err, &timeoutError) {
-				log.Error(err)
-				_ = s.CloseWithError(masky.DefaultApplicationErrorCode, err.Error())
-			}
+		stream, err := s.AcceptStream(context.Background())
+		if err != nil {
 			return
 		}
+		go func() {
+			if err := handleStream(&masky.Stream{Stream: stream}, s); err != nil {
+				log.Error(err)
+			}
+		}()
 	}
 }
 

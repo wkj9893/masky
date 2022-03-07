@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"os"
-	"runtime/debug"
 )
 
 type Level uint8
@@ -48,7 +47,6 @@ func Warn(v ...interface{}) {
 func Error(v ...interface{}) {
 	if logLevel <= ErrorLevel {
 		errorLogger.Println(v...)
-		debug.PrintStack()
 	}
 }
 

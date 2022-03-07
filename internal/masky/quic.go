@@ -9,19 +9,19 @@ import (
 const (
 	DefaultApplicationErrorCode = 0
 
-	maxDuration                    = 1<<63 - 1 // approximately 290 years
-	defaultStreamReceiveWindow     = 67108864  // 64 MB/s
-	defaultConnectionReceiveWindow = 67108864  // 64 MB/s
-	defaultMaxIncomingStreams      = 10000     // maximum number of concurrent bidirectional streams
+	defaultMaxIncomingStreams = 1024 // maximum number of concurrent bidirectional streams
 )
 
-var DefaultQuicConfig = &quic.Config{
-	HandshakeIdleTimeout:           time.Second,
-	MaxIdleTimeout:                 time.Duration(maxDuration),
-	InitialStreamReceiveWindow:     defaultStreamReceiveWindow,
-	MaxStreamReceiveWindow:         defaultStreamReceiveWindow,
-	InitialConnectionReceiveWindow: defaultConnectionReceiveWindow,
-	MaxConnectionReceiveWindow:     defaultConnectionReceiveWindow,
-	MaxIncomingStreams:             defaultMaxIncomingStreams,
-	EnableDatagrams:                true,
-}
+var (
+	DefaultQuicConfig = &quic.Config{
+		HandshakeIdleTimeout: time.Second,
+		// https://www.rfc-editor.org/rfc/rfc9002.html#name-initial-and-minimum-congest
+		InitialStreamReceiveWindow:     16 * (1 << 10), // 16 KB
+		MaxStreamReceiveWindow:         10 * (1 << 20), // 10 MB
+		InitialConnectionReceiveWindow: 16 * (1 << 10), // 16 KB
+		MaxConnectionReceiveWindow:     25 * (1 << 20), // 25 MB
+		MaxIncomingStreams:             defaultMaxIncomingStreams,
+		EnableDatagrams:                true,
+		KeepAlive:                      true,
+	}
+)

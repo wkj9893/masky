@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 
+	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/masky"
 )
 
@@ -52,9 +53,20 @@ func HandleConn(c *masky.Conn, client *masky.Client) error {
 			return err
 		}
 	case masky.RuleMode:
-		if masky.Lookup(host, port, client) == "CN" {
-			if dst, err = masky.Dial(addr.String()); err != nil {
-				return err
+		isocode, err := masky.Lookup(host, port, client)
+		if err != nil {
+			return nil
+		}
+		if isocode == "CN" {
+			if dst, err = masky.Dial(net.JoinHostPort(host, port)); err != nil {
+				log.Warn(fmt.Sprintf("fail to dial %v directly, set it using proxy instead", host))
+				client.SetCache(host, "")
+				if dst, err = client.ConectRemote(); err != nil {
+					return err
+				}
+				if _, err = dst.Write(append([]byte{5}, addr...)); err != nil {
+					return err
+				}
 			}
 		} else {
 			if dst, err = client.ConectRemote(); err != nil {

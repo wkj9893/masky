@@ -13,7 +13,7 @@ import (
 const name = "Country.mmdb"
 
 func download() (err error) {
-	resp, err := http.Get("https://cdn.jsdelivr.net/gh/Dreamacro/maxmind-geoip@release/Country.mmdb")
+	resp, err := http.Get("https://cdn.jsdelivr.net/gh/P3TERX/GeoLite.mmdb@download/GeoLite2-Country.mmdb")
 	if err != nil {
 		return err
 	}

@@ -34,7 +34,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	l, err := quic.ListenAddr(fmt.Sprintf(":%v", config.Port), tlsConf, masky.DefaultQuicConfig)
+	l, err := quic.ListenAddr(fmt.Sprintf(":%v", config.Port), tlsConf, masky.ServerQuicConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -69,10 +69,10 @@ func auth(s quic.Session) error {
 }
 
 func handleSession(s quic.Session) {
-	defer s.CloseWithError(masky.DefaultApplicationErrorCode, "")
 	for {
 		stream, err := s.AcceptStream(context.Background())
 		if err != nil {
+			_ = s.CloseWithError(masky.DefaultApplicationErrorCode, "")
 			return
 		}
 		go func() {

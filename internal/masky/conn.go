@@ -83,7 +83,7 @@ func lookup(host, port string) (string, error) {
 func Lookup(host, port string, c *Client) (string, error) {
 	t := time.Now()
 	if isocode, ok := c.GetFromCache(host); ok {
-		log.Info("get from cache:", host, isocode, time.Since(t))
+		log.Info(time.Since(t), "get from cache:", host, isocode)
 		return isocode, nil
 	}
 	isocode, err := lookup(host, port)
@@ -92,6 +92,6 @@ func Lookup(host, port string, c *Client) (string, error) {
 		return "", err
 	}
 	c.SetCache(host, isocode)
-	log.Info("lookup host:", host, isocode, time.Since(t))
+	log.Info(time.Since(t), "lookup host:", host, isocode)
 	return isocode, nil
 }

@@ -26,7 +26,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 		config: config,
 		cache:  make(map[string]string),
 	}
-	s, err := quic.DialAddr(c.config.Addr, tls.DefaultTLSConfig, DefaultQuicConfig)
+	s, err := quic.DialAddr(c.config.Addr, tls.DefaultTLSConfig, ClientQuicConfig)
 	if err != nil {
 		return nil, err
 	}

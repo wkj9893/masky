@@ -9,11 +9,14 @@ build-client:
 build-server:
 	CGO_ENABLED=0 go build $(GO_FLAGS) ./cmd/masky-server
 
-docker:
+docker-build-client:
+	docker build --tag masky-client -f ./client.Dockerfile .
+
+docker-build-server:
 	docker build --tag masky-server .
 
-docker-run:
-	docker run --rm -p 1080:1080/udp masky-server
+download:
+	curl -o Country.mmdb https://raw.githubusercontent.com/P3TERX/GeoLite.mmdb/download/GeoLite2-Country.mmdb 
 
 .PHONY: lint build-client build-server docker docker-run
 

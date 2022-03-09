@@ -63,8 +63,11 @@ func cache(w http.ResponseWriter, r *http.Request) {
 func Start(c *masky.Client) error {
 	client = c
 	config = client.GetConfig()
-	http.Handle("/", http.FileServer(http.Dir("../../web/build")))
+	http.Handle("/", http.FileServer(http.Dir("./web/build")))
 	http.HandleFunc("/api/configs", configs)
 	http.HandleFunc("/api/cache", cache)
-	return http.ListenAndServe("127.0.0.1:1081", nil)
+	if config.AllowLan {
+		return http.ListenAndServe(fmt.Sprintf(":%v", config.Port+1), nil)
+	}
+	return http.ListenAndServe(fmt.Sprintf("127.0.0.1:%v", config.Port+1), nil)
 }

@@ -2,6 +2,7 @@ package log
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"os"
 )
@@ -52,6 +53,25 @@ func Error(v ...interface{}) {
 
 func (l Level) MarshalJSON() ([]byte, error) {
 	return json.Marshal(l.String())
+}
+
+func (l *Level) UnmarshalJSON(data []byte) error {
+	var level string
+	err := json.Unmarshal(data, &level)
+	if err != nil {
+		return err
+	}
+	switch level {
+	case "info":
+		*l = InfoLevel
+	case "warn":
+		*l = WarnLevel
+	case "error":
+		*l = ErrorLevel
+	default:
+		return errors.New("unknown logLevel")
+	}
+	return nil
 }
 
 func (l Level) String() string {

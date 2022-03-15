@@ -1,0 +1,22 @@
+{
+  "name": "masky-client",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --outDir=build",
+    "preview": "vite preview",
+    "fmt": "deno fmt --ignore=node_modules"
+  },
+  "dependencies": {
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-router-dom": "^6.2.2",
+    "@fontsource/roboto": "^4.5.3"
+  },
+  "devDependencies": {
+    "@types/react": "^17.0.40",
+    "@types/react-dom": "^17.0.13",
+    "@vitejs/plugin-react": "^1.2.0",
+    "vite": "^2.8.6"
+  }
+}

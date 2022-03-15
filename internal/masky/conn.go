@@ -65,12 +65,14 @@ func Relay(left, right io.ReadWriteCloser) {
 }
 
 func lookup(host, port string) (string, error) {
+	t := time.Now()
 	ip, err := net.LookupIP(host)
 	if err != nil {
 		return "", err
 	}
 	for _, i := range ip {
 		if isocode, err := geoip.Lookup(i); err == nil && isocode != "" {
+			log.Info(time.Since(t), host, isocode)
 			return isocode, nil
 		}
 	}
@@ -81,9 +83,9 @@ func lookup(host, port string) (string, error) {
 }
 
 func Lookup(host, port string, c *Client) (string, error) {
-	t := time.Now()
+	// t := time.Now()
 	if isocode, ok := c.GetFromCache(host); ok {
-		log.Info(time.Since(t), "get from cache:", host, isocode)
+		// log.Info(time.Since(t), "get from cache:", host, isocode)
 		return isocode, nil
 	}
 	isocode, err := lookup(host, port)
@@ -92,6 +94,6 @@ func Lookup(host, port string, c *Client) (string, error) {
 		return "", err
 	}
 	c.SetCache(host, isocode)
-	log.Info(time.Since(t), "lookup host:", host, isocode)
+	// log.Info(time.Since(t), "lookup host:", host, isocode)
 	return isocode, nil
 }

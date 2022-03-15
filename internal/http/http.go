@@ -57,6 +57,8 @@ func HandleConn(c *masky.Conn, client *masky.Client) error {
 			}
 			local = false
 		}
+	default:
+		panic("unknown mode")
 	}
 
 	defer dst.Close()

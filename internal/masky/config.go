@@ -10,8 +10,8 @@ type ClientConfig struct {
 	Addr     string    `json:"addr"`
 	Dns      string    `json:"dns"`
 	Password string    `json:"password"`
-	AllowLan bool      `json:"allow_lan"`
-	LogLevel log.Level `json:"log_level"`
+	AllowLan bool      `json:"allowLan"`
+	LogLevel log.Level `json:"logLevel"`
 }
 
 type ServerConfig struct {

@@ -76,6 +76,8 @@ func HandleConn(c *masky.Conn, client *masky.Client) error {
 				return err
 			}
 		}
+	default:
+		panic("unknown mode")
 	}
 	defer dst.Close()
 	masky.Relay(c, dst)

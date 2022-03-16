@@ -4,16 +4,16 @@ lint:
 Country.mmdb:
 	curl -o Country.mmdb https://raw.githubusercontent.com/P3TERX/GeoLite.mmdb/download/GeoLite2-Country.mmdb 
 
-build-web:
-	cd web && pnpm build
+GO_FLAGS = -trimpath -ldflags '-w -s'
 
-build-client: Country.mmdb build-web
+build-client: Country.mmdb 
 	CGO_ENABLED=0 go build $(GO_FLAGS) ./cmd/masky-client
 
 build-server:
 	CGO_ENABLED=0 go build $(GO_FLAGS) ./cmd/masky-server
 
-GO_FLAGS = -trimpath -ldflags '-w -s'
+dev: build-client
+	cd web && pnpm build
 
-.PHONY: lint build-client build-server build-web 
+.PHONY: lint build-client build-server dev
 

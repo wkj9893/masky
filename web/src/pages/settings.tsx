@@ -1,5 +1,5 @@
 import { FormEvent, FormEventHandler, useEffect, useState } from "react";
-import "./setting.css";
+import "./setting.scss";
 
 interface Setting {
   port: number;

@@ -18,6 +18,8 @@ type Client struct {
 	mu      sync.RWMutex
 }
 
+var count int
+
 func NewClient(config ClientConfig) (*Client, error) {
 	if config.Dns != "" {
 		dns.SetResolver(config.Dns)
@@ -26,7 +28,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 		config: config,
 		cache:  make(map[string]string),
 	}
-	s, err := quic.DialAddr(c.config.Addr, tls.DefaultTLSConfig, ClientQuicConfig)
+	s, err := quic.DialAddr(c.config.Addr, tls.DefaultTLSConfig, QuicConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -88,20 +90,20 @@ func (c *Client) SetCache(host, isocode string) {
 }
 
 func (c *Client) ConectRemote() (*Stream, error) {
-	if stream, err := c.session.OpenStream(); err == nil {
-		return &Stream{stream}, nil
-	} else {
+	count++
+	if count == 10 {
+		count = 0
+		// try to reconnect server
+		if err := c.reconnect(); err != nil {
+			return nil, err
+		}
+	}
+	stream, err := c.session.OpenStream()
+	if err != nil {
 		log.Warn(err, "try to reconnect server")
-	}
-	// try to reconnect server
-	if err := c.reconnect(); err != nil {
 		return nil, err
 	}
-	if stream, err := c.session.OpenStream(); err == nil {
-		return &Stream{stream}, nil
-	} else {
-		return nil, err
-	}
+	return &Stream{stream}, nil
 }
 
 func (c *Client) reconnect() error {

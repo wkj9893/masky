@@ -34,7 +34,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	l, err := quic.ListenAddr(fmt.Sprintf(":%v", config.Port), tlsConf, masky.ServerQuicConfig)
+	l, err := quic.ListenAddr(fmt.Sprintf(":%v", config.Port), tlsConf, masky.QuicConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -46,6 +46,8 @@ func main() {
 		if err := auth(s); err != nil {
 			log.Error(err)
 			_ = s.CloseWithError(masky.DefaultApplicationErrorCode, err.Error())
+			log.Warn(fmt.Sprintf("remote client %v fail to connect server: %v", s.RemoteAddr(), err))
+			continue
 		}
 		log.Info(fmt.Sprintf("remote client %v connect to server successfully", s.RemoteAddr()))
 		go handleSession(s)

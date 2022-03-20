@@ -12,7 +12,6 @@ func SetResolver(dns string) {
 	}
 	dialer := net.Dialer{}
 	net.DefaultResolver = &net.Resolver{
-		PreferGo: true,
 		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
 			return dialer.DialContext(ctx, network, dns)
 		},

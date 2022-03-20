@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import "./Dashboard.css";
+import "./Dashboard.scss";
 
 export function Dashboard() {
   return (
@@ -13,6 +13,9 @@ export function Dashboard() {
         </Link>
         <Link to="/setting">
           Setting
+        </Link>
+        <Link to="/connections">
+          Connections
         </Link>
         <Link to="/logs">
           Logs

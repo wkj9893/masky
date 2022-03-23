@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"io"
 	"net"
-	"sync"
 	"time"
 
 	"github.com/wkj9893/masky/internal/geoip"
@@ -45,23 +44,19 @@ func Dial(addr string) (net.Conn, error) {
 }
 
 func Relay(left, right io.ReadWriteCloser) {
-	wg := sync.WaitGroup{}
-	wg.Add(2)
+	ch := make(chan int)
 	go func() {
 		if _, err := io.Copy(left, right); err == nil {
 			left.Close()
 			right.Close()
 		}
-		wg.Done()
+		ch <- 1
 	}()
-	go func() {
-		if _, err := io.Copy(right, left); err == nil {
-			left.Close()
-			right.Close()
-		}
-		wg.Done()
-	}()
-	wg.Wait()
+	if _, err := io.Copy(right, left); err == nil {
+		left.Close()
+		right.Close()
+	}
+	<-ch
 }
 
 func lookup(host, port string) (string, error) {

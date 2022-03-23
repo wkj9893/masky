@@ -2,118 +2,95 @@ package masky
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"sync"
+	"time"
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/wkj9893/masky/internal/dns"
-	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/tls"
 )
 
 type Client struct {
-	config  ClientConfig
-	cache   map[string]string // isocode cache
-	session quic.Session
-	mu      sync.RWMutex
-}
+	sync.RWMutex
 
-var count int
+	config ClientConfig
+	cache  map[string]string // isocode cache
+	// session quic.EarlySession
+}
 
 func NewClient(config ClientConfig) (*Client, error) {
 	if config.Dns != "" {
 		dns.SetResolver(config.Dns)
 	}
-	c := &Client{
-		config: config,
-		cache:  make(map[string]string),
-	}
-	s, err := quic.DialAddr(c.config.Addr, tls.DefaultTLSConfig, QuicConfig)
+	_, err := quic.DialAddrEarly(config.Addr, tls.ClientTLSConfig, QuicConfig)
 	if err != nil {
 		return nil, err
 	}
-	c.session = s
-	if err := c.auth(); err != nil {
-		_ = c.session.CloseWithError(DefaultApplicationErrorCode, err.Error())
-		return nil, err
-	}
-	return c, nil
-}
-
-func (c *Client) auth() error {
-	if err := c.session.SendMessage([]byte(c.config.Password)); err != nil {
-		return err
-	}
-	if message, err := c.session.ReceiveMessage(); err != nil {
-		return err
-	} else if string(message) != "ok" {
-		return errors.New("fail to auth")
-	}
-	return nil
+	return &Client{
+		config: config,
+		cache:  map[string]string{},
+	}, nil
 }
 
 func (c *Client) Mode() Mode {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.RLock()
+	defer c.RUnlock()
 	return c.config.Mode
 }
 
 func (c *Client) GetConfig() ClientConfig {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.RLock()
+	defer c.RUnlock()
 	return c.config
 }
 
 func (c *Client) MarshalCache() ([]byte, error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.RLock()
+	defer c.RUnlock()
 	return json.MarshalIndent(c.cache, "", "  ")
 }
 
 func (c *Client) GetFromCache(host string) (string, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.RLock()
+	defer c.RUnlock()
 	isocode, ok := c.cache[host]
 	return isocode, ok
 }
 
 func (c *Client) SetConfig(config ClientConfig) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.Lock()
+	defer c.Unlock()
 	c.config = config
 }
 
 func (c *Client) SetCache(host, isocode string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.Lock()
+	defer c.Unlock()
 	c.cache[host] = isocode
 }
 
+var (
+	a = 0
+	b = 0
+)
+
 func (c *Client) ConectRemote() (*Stream, error) {
-	count++
-	if count == 10 {
-		count = 0
-		// try to reconnect server
-		if err := c.reconnect(); err != nil {
-			return nil, err
-		}
-	}
-	stream, err := c.session.OpenStream()
+	session, err := quic.DialAddrEarly(c.config.Addr, tls.ClientTLSConfig, QuicConfig)
 	if err != nil {
-		log.Warn(err, "try to reconnect server")
 		return nil, err
 	}
-	return &Stream{stream}, nil
-}
-
-func (c *Client) reconnect() error {
-	newClient, err := NewClient(c.config)
+	stream, err := session.OpenStream()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.session = newClient.session
-	log.Info("reconnect server successfully")
-	return nil
+	go func() {
+		time.Sleep(2 * time.Second)
+		a++
+		if session.ConnectionState().TLS.Used0RTT {
+			b++
+		}
+		fmt.Println(a, b)
+	}()
+	return &Stream{stream}, nil
 }

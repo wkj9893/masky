@@ -45,7 +45,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	log.Info("connect to remote server successfully")
 	l, err := net.Listen("tcp", localAddr)
 	if err != nil {
 		panic(err)

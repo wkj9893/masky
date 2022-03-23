@@ -23,7 +23,7 @@ func init() {
 	config = masky.ServerConfig{
 		Port:     1080,
 		Password: "masky",
-		LogLevel: log.InfoLevel,
+		LogLevel: log.WarnLevel,
 	}
 	parseArgs(os.Args[1:])
 	log.SetLogLevel(config.LogLevel)
@@ -34,7 +34,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	l, err := quic.ListenAddr(fmt.Sprintf(":%v", config.Port), tlsConf, masky.QuicConfig)
+	l, err := quic.ListenAddrEarly(fmt.Sprintf(":%v", config.Port), tlsConf, masky.QuicConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -43,49 +43,22 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		if err := auth(s); err != nil {
-			log.Error(err)
-			_ = s.CloseWithError(masky.DefaultApplicationErrorCode, err.Error())
-			log.Warn(fmt.Sprintf("remote client %v fail to connect server: %v", s.RemoteAddr(), err))
-			continue
-		}
-		log.Info(fmt.Sprintf("remote client %v connect to server successfully", s.RemoteAddr()))
 		go handleSession(s)
 	}
 }
 
-func auth(s quic.Session) error {
-	password, err := s.ReceiveMessage()
+func handleSession(s quic.EarlySession) {
+	stream, err := s.AcceptStream(context.Background())
 	if err != nil {
-		return err
+		_ = s.CloseWithError(masky.DefaultApplicationErrorCode, "")
+		return
 	}
-	if string(password) != config.Password {
-		log.Warn(fmt.Sprintf("auth error: wrong password, want: %s, get: %s", config.Password, password))
-		return err
-	}
-	err = s.SendMessage([]byte("ok"))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func handleSession(s quic.Session) {
-	for {
-		stream, err := s.AcceptStream(context.Background())
-		if err != nil {
-			_ = s.CloseWithError(masky.DefaultApplicationErrorCode, "")
-			return
-		}
-		go func() {
-			if err := handleStream(&masky.Stream{Stream: stream}, s); err != nil {
-				log.Error(err)
-			}
-		}()
+	if err := handleStream(&masky.Stream{Stream: stream}, s); err != nil {
+		log.Error(err)
 	}
 }
 
-func handleStream(stream *masky.Stream, s quic.Session) error {
+func handleStream(stream *masky.Stream, s quic.EarlySession) error {
 	defer stream.Close()
 	c := masky.NewConn(stream)
 

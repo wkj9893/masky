@@ -11,5 +11,4 @@ const DefaultApplicationErrorCode = 0
 var QuicConfig = &quic.Config{
 	HandshakeIdleTimeout: time.Second,
 	EnableDatagrams:      true,
-	KeepAlive:            true,
 }

@@ -29,7 +29,7 @@ func init() {
 		Dns:      "",
 		Password: "masky",
 		AllowLan: true,
-		LogLevel: log.InfoLevel,
+		LogLevel: log.WarnLevel,
 	}
 	parseArgs(os.Args[1:])
 	log.SetLogLevel(config.LogLevel)
@@ -41,21 +41,23 @@ func init() {
 }
 
 func main() {
-	client, err := masky.NewClient(config)
-	if err != nil {
-		panic(err)
-	}
 	l, err := net.Listen("tcp", localAddr)
 	if err != nil {
 		panic(err)
 	}
 	log.Info("client listen on port", config.Port)
+	client, err := masky.NewClient(config)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("connect to remote server successfully")
 	go func() {
 		if err := api.Start(client); err != nil {
 			log.Warn("fail to start api server", err)
+		} else {
+			log.Info("API Server listening at: http://localhost:1081")
 		}
 	}()
-	log.Info("API Server listening at: http://localhost:1081")
 	for {
 		if c, err := l.Accept(); err == nil {
 			go handleConn(c, client)

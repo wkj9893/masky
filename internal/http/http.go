@@ -25,7 +25,8 @@ func HandleConn(c *masky.Conn, client *masky.Client) error {
 		port = "80"
 	}
 
-	switch client.Mode() {
+	mode := client.GetConfig().Mode
+	switch mode {
 	case masky.DirectMode:
 		dst, err = masky.Dial(net.JoinHostPort(host, port))
 		if err != nil {

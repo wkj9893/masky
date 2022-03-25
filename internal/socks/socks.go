@@ -40,7 +40,8 @@ func HandleConn(c *masky.Conn, client *masky.Client) error {
 		return err
 	}
 
-	switch client.Mode() {
+	mode := client.GetConfig().Mode
+	switch mode {
 	case masky.DirectMode:
 		if dst, err = masky.Dial(addr.String()); err != nil {
 			return err

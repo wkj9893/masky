@@ -38,6 +38,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("start server successfully")
 	for {
 		s, err := l.Accept(context.Background())
 		if err != nil {

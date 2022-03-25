@@ -34,22 +34,16 @@ func NewClient(config ClientConfig) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) Mode() Mode {
-	c.RLock()
-	defer c.RUnlock()
-	return c.config.Mode
-}
-
 func (c *Client) GetConfig() ClientConfig {
 	c.RLock()
 	defer c.RUnlock()
 	return c.config
 }
 
-func (c *Client) MarshalCache() ([]byte, error) {
-	c.RLock()
-	defer c.RUnlock()
-	return json.MarshalIndent(c.cache, "", "  ")
+func (c *Client) SetConfig(config ClientConfig) {
+	c.Lock()
+	defer c.Unlock()
+	c.config = config
 }
 
 func (c *Client) GetFromCache(host string) (string, bool) {
@@ -59,16 +53,22 @@ func (c *Client) GetFromCache(host string) (string, bool) {
 	return isocode, ok
 }
 
-func (c *Client) SetConfig(config ClientConfig) {
-	c.Lock()
-	defer c.Unlock()
-	c.config = config
-}
-
 func (c *Client) SetCache(host, isocode string) {
 	c.Lock()
 	defer c.Unlock()
 	c.cache[host] = isocode
+}
+
+func (c *Client) MarshalCache() ([]byte, error) {
+	c.RLock()
+	defer c.RUnlock()
+	return json.MarshalIndent(c.cache, "", "  ")
+}
+
+func (c *Client) GetConn() ([]byte, error) {
+	c.RLock()
+	defer c.RUnlock()
+	return json.MarshalIndent(c.cache, "", "  ")
 }
 
 var (
@@ -83,7 +83,7 @@ func (c *Client) find() quic.Stream {
 		if !isActive(stream) {
 			stream, err := session.OpenStream()
 			if err != nil {
-				fmt.Println("why why ", err)
+				delete(c.m, session)
 				continue
 			}
 			c.m[session] = stream

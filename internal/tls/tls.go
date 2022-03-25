@@ -19,7 +19,7 @@ var ClientTLSConfig = &tls.Config{
 
 // Setup a bare-bones TLS config for the server
 func GenerateTLSConfig() (*tls.Config, error) {
-	key, err := rsa.GenerateKey(rand.Reader, 1024)
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return nil, err
 	}

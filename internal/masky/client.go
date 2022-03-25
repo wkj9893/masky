@@ -16,7 +16,7 @@ type Client struct {
 
 	config ClientConfig
 	cache  map[string]string // isocode cache
-	// session quic.EarlySession
+	m      map[quic.Session]quic.Stream
 }
 
 func NewClient(config ClientConfig) (*Client, error) {
@@ -30,6 +30,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 	return &Client{
 		config: config,
 		cache:  map[string]string{},
+		m:      map[quic.Session]quic.Stream{},
 	}, nil
 }
 
@@ -75,7 +76,27 @@ var (
 	b = 0
 )
 
+func (c *Client) find() quic.Stream {
+	c.Lock()
+	defer c.Unlock()
+	for session, stream := range c.m {
+		if !isActive(stream) {
+			stream, err := session.OpenStream()
+			if err != nil {
+				fmt.Println("why why ", err)
+				continue
+			}
+			c.m[session] = stream
+			return stream
+		}
+	}
+	return nil
+}
+
 func (c *Client) ConectRemote() (*Stream, error) {
+	if stream := c.find(); stream != nil {
+		return &Stream{stream}, nil
+	}
 	session, err := quic.DialAddrEarly(c.config.Addr, tls.ClientTLSConfig, QuicConfig)
 	if err != nil {
 		return nil, err
@@ -92,5 +113,17 @@ func (c *Client) ConectRemote() (*Stream, error) {
 		}
 		fmt.Println(a, b)
 	}()
+	c.Lock()
+	c.m[session] = stream
+	c.Unlock()
 	return &Stream{stream}, nil
+}
+
+func isActive(s quic.Stream) bool {
+	select {
+	case <-s.Context().Done():
+		return false
+	default:
+		return true
+	}
 }

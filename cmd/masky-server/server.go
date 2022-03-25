@@ -48,13 +48,15 @@ func main() {
 }
 
 func handleSession(s quic.EarlySession) {
-	stream, err := s.AcceptStream(context.Background())
-	if err != nil {
-		_ = s.CloseWithError(masky.DefaultApplicationErrorCode, "")
-		return
-	}
-	if err := handleStream(&masky.Stream{Stream: stream}, s); err != nil {
-		log.Error(err)
+	for {
+		stream, err := s.AcceptStream(context.Background())
+		if err != nil {
+			_ = s.CloseWithError(masky.DefaultApplicationErrorCode, "")
+			return
+		}
+		if err := handleStream(&masky.Stream{Stream: stream}, s); err != nil {
+			log.Error(err)
+		}
 	}
 }
 

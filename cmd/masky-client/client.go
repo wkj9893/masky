@@ -26,7 +26,6 @@ func init() {
 		Port:     1080,
 		Mode:     masky.RuleMode,
 		Addr:     "127.0.0.1:1080",
-		Dns:      "",
 		Password: "masky",
 		AllowLan: true,
 		LogLevel: log.WarnLevel,
@@ -106,9 +105,6 @@ func parseArgs(args []string) {
 
 		case strings.HasPrefix(arg, "--addr="):
 			config.Addr = arg[len("--addr="):]
-
-		case strings.HasPrefix(arg, "--dns="):
-			config.Dns = arg[len("--dns="):]
 
 		case strings.HasPrefix(arg, "--password="):
 			config.Password = arg[len("--password="):]

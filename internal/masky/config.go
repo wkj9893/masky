@@ -8,7 +8,6 @@ type ClientConfig struct {
 	Port     uint16    `json:"port"`
 	Mode     Mode      `json:"mode"`
 	Addr     string    `json:"addr"`
-	Dns      string    `json:"dns"`
 	Password string    `json:"password"`
 	AllowLan bool      `json:"allowLan"`
 	LogLevel log.Level `json:"logLevel"`

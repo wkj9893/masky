@@ -10,13 +10,13 @@ import (
 func Test_parseArgs(t *testing.T) {
 	config = masky.ClientConfig{}
 	tests := [][]string{
-		{"--port=3000", "--addr=127.0.0.1:3001", "--dns=8.8.8.8", "--password=abc", "--allowlan=false"},
+		{"--port=3000", "--addr=127.0.0.1:3001", "--password=abc", "--allowlan=false"},
 		{"--mode=direct", "--log=info", "--allowlan=true"},
 		{"--mode=rule", "--log=warn"},
 		{"--mode=global", "--log=error"},
 	}
 	parseArgs(tests[0])
-	if config.Port != 3000 || config.Addr != "127.0.0.1:3001" || config.Dns != "8.8.8.8" || config.Password != "abc" || config.AllowLan != false {
+	if config.Port != 3000 || config.Addr != "127.0.0.1:3001" || config.Password != "abc" || config.AllowLan != false {
 		t.FailNow()
 	}
 	parseArgs(tests[1])

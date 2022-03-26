@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/wkj9893/masky/internal/dns"
 	"github.com/wkj9893/masky/internal/tls"
 )
 
@@ -16,13 +15,10 @@ type Client struct {
 
 	config ClientConfig
 	cache  map[string]string // isocode cache
-	m      map[quic.Session]quic.Stream
+	m      map[quic.EarlySession]quic.Stream
 }
 
 func NewClient(config ClientConfig) (*Client, error) {
-	if config.Dns != "" {
-		dns.SetResolver(config.Dns)
-	}
 	_, err := quic.DialAddrEarly(config.Addr, tls.ClientTLSConfig, QuicConfig)
 	if err != nil {
 		return nil, err
@@ -30,7 +26,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 	return &Client{
 		config: config,
 		cache:  map[string]string{},
-		m:      map[quic.Session]quic.Stream{},
+		m:      map[quic.EarlySession]quic.Stream{},
 	}, nil
 }
 

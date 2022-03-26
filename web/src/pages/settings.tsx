@@ -5,7 +5,6 @@ interface Setting {
   port: number;
   mode: Mode;
   addr: string;
-  dns: string;
   password: string;
   allowLan: boolean;
   logLevel: LogLevel;
@@ -29,7 +28,6 @@ export function SettingsPage() {
       setPort(setting.port);
       setMode(setting.mode);
       setAddr(setting.addr);
-      setDns(setting.dns);
       setPassword(setting.password);
       setAllowLan(setting.allowLan ? "true" : "false");
       setLogLevel(setting.logLevel);
@@ -43,7 +41,6 @@ export function SettingsPage() {
       port,
       mode: mode as Mode,
       addr,
-      dns,
       password,
       allowLan: allowLan === "true" ? true : false,
       logLevel: logLevel as LogLevel,

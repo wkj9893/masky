@@ -1,12 +1,9 @@
-package main
+package server
 
 import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/lucas-clemente/quic-go"
@@ -16,20 +13,7 @@ import (
 	"github.com/wkj9893/masky/internal/tls"
 )
 
-var config masky.ServerConfig
-
-func init() {
-	// default config
-	config = masky.ServerConfig{
-		Port:     1080,
-		Password: "masky",
-		LogLevel: log.WarnLevel,
-	}
-	parseArgs(os.Args[1:])
-	log.SetLogLevel(config.LogLevel)
-}
-
-func main() {
+func Run(config Config) {
 	tlsConf, err := tls.GenerateTLSConfig()
 	if err != nil {
 		panic(err)
@@ -38,7 +22,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("start server successfully")
+	log.Info("start server successfully")
 	for {
 		s, err := l.Accept(context.Background())
 		if err != nil {
@@ -52,16 +36,16 @@ func handleSession(s quic.EarlySession) {
 	for {
 		stream, err := s.AcceptStream(context.Background())
 		if err != nil {
-			_ = s.CloseWithError(masky.DefaultApplicationErrorCode, "")
+			_ = s.CloseWithError(0, "")
 			return
 		}
-		if err := handleStream(&masky.Stream{Stream: stream}, s); err != nil {
+		if err := handleStream(stream, s); err != nil {
 			log.Error(err)
 		}
 	}
 }
 
-func handleStream(stream *masky.Stream, s quic.EarlySession) error {
+func handleStream(stream quic.Stream, s quic.EarlySession) error {
 	defer stream.Close()
 	c := masky.NewConn(stream)
 
@@ -114,28 +98,4 @@ func handleStream(stream *masky.Stream, s quic.EarlySession) error {
 		}
 	}
 	return nil
-}
-
-func parseArgs(args []string) {
-	for _, arg := range args {
-		switch {
-		case strings.HasPrefix(arg, "--port="):
-			if n, err := strconv.Atoi(arg[len("--port="):]); err == nil {
-				config.Port = uint16(n)
-			}
-
-		case strings.HasPrefix(arg, "--password="):
-			config.Password = arg[len("--password="):]
-
-		case strings.HasPrefix(arg, "--log="):
-			switch arg[len("--log="):] {
-			case "info":
-				config.LogLevel = log.InfoLevel
-			case "warn":
-				config.LogLevel = log.WarnLevel
-			case "error":
-				config.LogLevel = log.ErrorLevel
-			}
-		}
-	}
 }

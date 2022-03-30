@@ -13,7 +13,7 @@ const defaultALPN = "masky"
 var ClientTLSConfig = &tls.Config{
 	InsecureSkipVerify: true,
 	NextProtos:         []string{defaultALPN},
-	ClientSessionCache: tls.NewLRUClientSessionCache(1),
+	ClientSessionCache: tls.NewLRUClientSessionCache(1024),
 	CipherSuites:       []uint16{tls.TLS_CHACHA20_POLY1305_SHA256},
 }
 

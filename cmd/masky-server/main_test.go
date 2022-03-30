@@ -4,19 +4,19 @@ import (
 	"testing"
 
 	"github.com/wkj9893/masky/internal/log"
-	"github.com/wkj9893/masky/internal/masky"
+	"github.com/wkj9893/masky/internal/server"
 )
 
 func Test_parseArgs(t *testing.T) {
-	config = masky.ServerConfig{}
+	config = server.Config{}
 	tests := [][]string{
-		{"--port=3000", "--password=123"},
+		{"--port=3000"},
 		{"--log=info"},
 		{"--log=warn"},
 		{"--log=error"},
 	}
 	parseArgs(tests[0])
-	if config.Port != 3000 || config.Password != "123" {
+	if config.Port != 3000 {
 		t.FailNow()
 	}
 	parseArgs(tests[1])

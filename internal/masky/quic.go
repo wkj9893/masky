@@ -6,11 +6,8 @@ import (
 	"github.com/lucas-clemente/quic-go"
 )
 
-const DefaultApplicationErrorCode = 0
-
 var QuicConfig = &quic.Config{
 	HandshakeIdleTimeout: time.Second,
-	MaxIdleTimeout:       time.Minute,
+	MaxIdleTimeout:       5 * time.Minute,
 	EnableDatagrams:      true,
-	KeepAlive:            true,
 }

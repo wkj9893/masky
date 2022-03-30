@@ -5,9 +5,6 @@ import (
 	"io"
 	"net"
 	"time"
-
-	"github.com/wkj9893/masky/internal/geoip"
-	"github.com/wkj9893/masky/internal/log"
 )
 
 type Conn struct {
@@ -57,34 +54,4 @@ func Relay(left, right io.ReadWriteCloser) {
 		right.Close()
 	}
 	<-ch
-}
-
-func lookup(host, port string) (string, error) {
-	t := time.Now()
-	ip, err := net.LookupIP(host)
-	if err != nil {
-		return "", err
-	}
-	for _, i := range ip {
-		if isocode, err := geoip.Lookup(i); err == nil && isocode != "" {
-			log.Info(time.Since(t), host, isocode)
-			return isocode, nil
-		}
-	}
-	if _, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), 200*time.Millisecond); err == nil {
-		return "CN", nil
-	}
-	return "", nil
-}
-
-func Lookup(host, port string, c *Client) (string, error) {
-	if isocode, ok := c.GetFromCache(host); ok {
-		return isocode, nil
-	}
-	isocode, err := lookup(host, port)
-	if err != nil {
-		return "", err
-	}
-	c.SetCache(host, isocode)
-	return isocode, nil
 }

@@ -2,6 +2,7 @@ package masky
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"net"
 	"time"
@@ -54,4 +55,5 @@ func Relay(left, right io.ReadWriteCloser) {
 		right.Close()
 	}
 	<-ch
+	fmt.Println("done")
 }

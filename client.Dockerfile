@@ -7,6 +7,5 @@ FROM alpine:latest
 WORKDIR /
 COPY --from=build /masky/Country.mmdb /
 COPY --from=build /masky/masky-client /
-COPY --from=build /masky/web/build /web/build
-EXPOSE 1080 1081
+EXPOSE 1080 
 ENTRYPOINT [ "/masky-client" ]

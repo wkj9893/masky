@@ -8,7 +8,7 @@ import (
 	"github.com/wkj9893/masky/internal/masky"
 )
 
-func Run(config Config) {
+func Run(config *Config) {
 	addr := fmt.Sprintf(":%v", config.Port)
 	if !config.AllowLan {
 		addr = fmt.Sprintf("127.0.0.1:%v", config.Port)
@@ -20,14 +20,14 @@ func Run(config Config) {
 	log.Info("client listen on port", config.Port)
 	for {
 		if c, err := l.Accept(); err == nil {
-			go handleConn(c, config.Mode)
+			go handleConn(c, config)
 		} else {
 			panic(err)
 		}
 	}
 }
 
-func handleConn(c net.Conn, mode Mode) {
+func handleConn(c net.Conn, config *Config) {
 	defer c.Close()
 	conn := masky.NewConn(c)
 	head, err := conn.Reader().Peek(1)
@@ -36,11 +36,11 @@ func handleConn(c net.Conn, mode Mode) {
 		return
 	}
 	if head[0] == 5 {
-		if err := handleSocks(conn, mode); err != nil {
+		if err := handleSocks(conn, config); err != nil {
 			log.Warn(err)
 		}
 	} else {
-		if err := HandleHttp(conn, mode); err != nil {
+		if err := HandleHttp(conn, config); err != nil {
 			log.Warn(err)
 		}
 	}

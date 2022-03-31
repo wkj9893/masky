@@ -11,14 +11,14 @@ import (
 	"github.com/wkj9893/masky/internal/tls"
 )
 
-func Run(config Config) error {
+func Run(config Config) {
 	tlsConf, err := tls.GenerateTLSConfig()
 	if err != nil {
-		return err
+		panic(err)
 	}
 	l, err := quic.ListenAddrEarly(fmt.Sprintf(":%v", config.Port), tlsConf, nil)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	for {
 		s, err := l.Accept(context.Background())

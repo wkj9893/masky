@@ -9,9 +9,9 @@ import (
 	"github.com/wkj9893/masky/internal/socks"
 )
 
-func handleSocks(c *masky.Conn, mode Mode) error {
+func handleSocks(c *masky.Conn, config *Config) error {
 	defer c.Close()
-	addr, err := socks.Handshake(c)
+	addr, err := socks.Handshake(c, config.Port)
 	if err != nil {
 		return err
 	}
@@ -21,7 +21,7 @@ func handleSocks(c *masky.Conn, mode Mode) error {
 		return err
 	}
 
-	switch mode {
+	switch config.Mode {
 	case DirectMode:
 		if dst, err = masky.Dial(addr.String()); err != nil {
 			return err

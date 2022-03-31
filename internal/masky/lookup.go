@@ -12,7 +12,7 @@ import (
 var (
 	mu sync.RWMutex
 
-	m map[string]string
+	m = map[string]string{}
 )
 
 func lookup(host, port string) (string, error) {

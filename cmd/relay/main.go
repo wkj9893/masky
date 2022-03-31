@@ -9,7 +9,7 @@ import (
 )
 
 var config = relay.Config{
-	Port: 1081,
+	Port: 3001,
 	Addr: []string{},
 }
 

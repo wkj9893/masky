@@ -7,13 +7,14 @@ import (
 
 	"github.com/wkj9893/masky/internal/client"
 	"github.com/wkj9893/masky/internal/log"
+	"github.com/wkj9893/masky/internal/quic"
 )
 
 // default config
 var config = client.Config{
 	Port:     1080,
 	Mode:     client.RuleMode,
-	Addr:     "127.0.0.1:1080",
+	Addr:     "127.0.0.1:3000",
 	AllowLan: true,
 	LogLevel: log.InfoLevel,
 }
@@ -21,7 +22,8 @@ var config = client.Config{
 func main() {
 	parseArgs(os.Args[1:])
 	log.SetLogLevel(config.LogLevel)
-	client.Run(config)
+	quic.SetAddr(config.Addr)
+	client.Run(&config)
 }
 
 func parseArgs(args []string) {

@@ -11,14 +11,14 @@ import (
 
 // default config
 var config = server.Config{
-	Port:     1080,
+	Port:     3000,
 	LogLevel: log.InfoLevel,
 }
 
 func main() {
 	parseArgs(os.Args[1:])
 	log.SetLogLevel(config.LogLevel)
-	server.Run(config)
+	server.Run(&config)
 }
 
 func parseArgs(args []string) {

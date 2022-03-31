@@ -10,7 +10,7 @@ import (
 	"github.com/wkj9893/masky/internal/quic"
 )
 
-func HandleHttp(c *masky.Conn, mode Mode) error {
+func HandleHttp(c *masky.Conn, config *Config) error {
 	defer c.Close()
 	local := true
 	req, err := http.ReadRequest(c.Reader())
@@ -25,7 +25,7 @@ func HandleHttp(c *masky.Conn, mode Mode) error {
 		port = "80"
 	}
 
-	switch mode {
+	switch config.Mode {
 	case DirectMode:
 		dst, err = masky.Dial(net.JoinHostPort(host, port))
 		if err != nil {

@@ -8,24 +8,23 @@ import (
 )
 
 const (
-	Version        = 5
 	maxBufLen      = 256
-	AtypIPv4       = 1
-	AtypDomainName = 3
-	AtypIPv6       = 4
+	atypIPv4       = 1
+	atypDomainName = 3
+	atypIPv6       = 4
 )
 
 type Addr []byte // RFC 1928 section 5		ATYP + ADDR + PORT
 
 func (addr Addr) String() string {
 	port := fmt.Sprint(256*int(addr[len(addr)-2]) + int(addr[len(addr)-1]))
-	if addr[0] == AtypIPv4 || addr[0] == AtypIPv6 {
+	if addr[0] == atypIPv4 || addr[0] == atypIPv6 {
 		return net.JoinHostPort(net.IP(addr[1:len(addr)-2]).String(), port)
 	}
 	return net.JoinHostPort(string(addr[2:len(addr)-2]), port)
 }
 
-func Handshake(rw io.ReadWriter) (Addr, error) {
+func Handshake(rw io.ReadWriter, port uint16) (Addr, error) {
 	buf := make([]byte, maxBufLen)
 	// read VER, NMETHODS
 	if _, err := io.ReadFull(rw, buf[:2]); err != nil {
@@ -43,15 +42,13 @@ func Handshake(rw io.ReadWriter) (Addr, error) {
 	if _, err := io.ReadFull(rw, buf[:3]); err != nil {
 		return nil, err
 	}
-	if buf[1] != 1 {
-		return nil, errors.New("cmd not supported")
-	}
-	// read DST.ADDR DST.PORT
+	// read ATYP DST.ADDR DST.PORT
 	addr, err := ReadAddr(rw, buf)
 	if err != nil {
 		return nil, err
 	}
-	if _, err = rw.Write([]byte{5, 0, 0, 1, 127, 0, 0, 1, 7, 229}); err != nil {
+	// write VER REP RSV ATYP BND.ADDR BND.PORT
+	if _, err = rw.Write([]byte{5, 0, 0, 1, 127, 0, 0, 1, byte(port / 256), byte(port % 256)}); err != nil {
 		return nil, err
 	}
 	return addr, nil
@@ -63,12 +60,12 @@ func ReadAddr(r io.Reader, b []byte) (Addr, error) {
 		return nil, err
 	}
 	switch b[0] {
-	case AtypIPv4:
+	case atypIPv4:
 		if _, err := io.ReadFull(r, b[1:net.IPv4len+3]); err != nil {
 			return nil, err
 		}
 		return b[:net.IPv4len+3], nil
-	case AtypDomainName:
+	case atypDomainName:
 		if _, err := io.ReadFull(r, b[1:2]); err != nil {
 			return nil, err
 		}
@@ -76,8 +73,8 @@ func ReadAddr(r io.Reader, b []byte) (Addr, error) {
 			return nil, err
 		}
 		return b[:b[1]+4], nil
-	case AtypIPv6:
-		if _, err := io.ReadFull(r, b[1:net.IPv6len+2]); err != nil {
+	case atypIPv6:
+		if _, err := io.ReadFull(r, b[1:net.IPv6len+3]); err != nil {
 			return nil, err
 		}
 		return b[:net.IPv6len+3], nil

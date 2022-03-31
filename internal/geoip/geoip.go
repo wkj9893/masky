@@ -6,7 +6,7 @@ import (
 	"github.com/oschwald/maxminddb-golang"
 )
 
-var name = "Country.mmdb"
+const name = "Country.mmdb"
 
 func Lookup(ip net.IP) (string, error) {
 	db, err := maxminddb.Open(name)
@@ -21,8 +21,7 @@ func Lookup(ip net.IP) (string, error) {
 		} `maxminddb:"country"`
 	}
 
-	err = db.Lookup(ip, &record)
-	if err != nil {
+	if err := db.Lookup(ip, &record); err != nil {
 		return "", err
 	}
 	return record.Country.ISOCode, nil

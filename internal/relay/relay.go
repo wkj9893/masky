@@ -11,7 +11,7 @@ import (
 	"github.com/wkj9893/masky/internal/tls"
 )
 
-func Run(config Config) {
+func Run(config *Config) {
 	tlsConf, err := tls.GenerateTLSConfig()
 	if err != nil {
 		panic(err)
@@ -25,7 +25,7 @@ func Run(config Config) {
 		if err != nil {
 			panic(err)
 		}
-		go handleSession(s, config.Addr)
+		go handleSession(s, config.Addrs)
 	}
 }
 

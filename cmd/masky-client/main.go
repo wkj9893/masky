@@ -14,7 +14,7 @@ import (
 var config = client.Config{
 	Port:     1080,
 	Mode:     client.RuleMode,
-	Addr:     "127.0.0.1:3000",
+	Addrs:    []string{"127.0.0.1:3000"},
 	AllowLan: true,
 	LogLevel: log.InfoLevel,
 }
@@ -22,7 +22,7 @@ var config = client.Config{
 func main() {
 	parseArgs(os.Args[1:])
 	log.SetLogLevel(config.LogLevel)
-	quic.SetAddr(config.Addr)
+	quic.SetAddr(config.Addrs[0])
 	client.Run(&config)
 }
 
@@ -44,8 +44,11 @@ func parseArgs(args []string) {
 				config.Mode = client.GlobalMode
 			}
 
-		case strings.HasPrefix(arg, "--addr="):
-			config.Addr = arg[len("--addr="):]
+		case strings.HasPrefix(arg, "--addrs="):
+			addrs := strings.Split(arg[len("--addrs="):], ",")
+			for _, addr := range addrs {
+				config.Addrs = append(config.Addrs, strings.TrimSpace(addr))
+			}
 
 		case strings.HasPrefix(arg, "--allowlan="):
 			switch arg[len("--allowlan="):] {

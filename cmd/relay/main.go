@@ -9,13 +9,13 @@ import (
 )
 
 var config = relay.Config{
-	Port: 3001,
-	Addr: []string{},
+	Port:  3001,
+	Addrs: []string{},
 }
 
 func main() {
 	parseArgs(os.Args[1:])
-	relay.Run(config)
+	relay.Run(&config)
 }
 
 func parseArgs(args []string) {
@@ -26,8 +26,11 @@ func parseArgs(args []string) {
 				config.Port = uint16(n)
 			}
 
-		case strings.HasPrefix(arg, "--addr="):
-			config.Addr = strings.Split(arg[len("--addr="):], ",")
+		case strings.HasPrefix(arg, "--addrs="):
+			addrs := strings.Split(arg[len("--addr="):], ",")
+			for _, addr := range addrs {
+				config.Addrs = append(config.Addrs, strings.TrimSpace(addr))
+			}
 		}
 	}
 }

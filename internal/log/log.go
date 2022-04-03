@@ -57,8 +57,25 @@ func (l Level) MarshalJSON() ([]byte, error) {
 
 func (l *Level) UnmarshalJSON(data []byte) error {
 	var level string
-	err := json.Unmarshal(data, &level)
-	if err != nil {
+	if err := json.Unmarshal(data, &level); err != nil {
+		return err
+	}
+	switch level {
+	case "info":
+		*l = InfoLevel
+	case "warn":
+		*l = WarnLevel
+	case "error":
+		*l = ErrorLevel
+	default:
+		return errors.New("unknown logLevel")
+	}
+	return nil
+}
+
+func (l *Level) UnmarshalYAML(unmarshal func(any) error) error {
+	var level string
+	if err := unmarshal(&level); err != nil {
 		return err
 	}
 	switch level {

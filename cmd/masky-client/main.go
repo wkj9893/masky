@@ -1,72 +1,32 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"os"
-	"strconv"
-	"strings"
 
 	"github.com/wkj9893/masky/internal/client"
 	"github.com/wkj9893/masky/internal/log"
-	"github.com/wkj9893/masky/internal/quic"
+	"gopkg.in/yaml.v3"
 )
 
-// default config
-var config = client.Config{
-	Port:     1080,
-	Mode:     client.RuleMode,
-	Addrs:    []string{"127.0.0.1:3000"},
-	AllowLan: true,
-	LogLevel: log.InfoLevel,
-}
-
 func main() {
-	parseArgs(os.Args[1:])
+	name := flag.String("c", "config.yaml", "client config")
+	flag.Parse()
+	config := parseConfig(*name)
 	log.SetLogLevel(config.LogLevel)
-	quic.SetAddr(config.Addrs[0])
-	client.Run(&config)
+	client.Run(config)
 }
 
-func parseArgs(args []string) {
-	for _, arg := range args {
-		switch {
-		case strings.HasPrefix(arg, "--port="):
-			if n, err := strconv.Atoi(arg[len("--port="):]); err == nil {
-				config.Port = uint16(n)
-			}
-
-		case strings.HasPrefix(arg, "--mode="):
-			switch arg[len("--mode="):] {
-			case "direct":
-				config.Mode = client.DirectMode
-			case "rule":
-				config.Mode = client.RuleMode
-			case "global":
-				config.Mode = client.GlobalMode
-			}
-
-		case strings.HasPrefix(arg, "--addrs="):
-			addrs := strings.Split(arg[len("--addrs="):], ",")
-			for _, addr := range addrs {
-				config.Addrs = append(config.Addrs, strings.TrimSpace(addr))
-			}
-
-		case strings.HasPrefix(arg, "--allowlan="):
-			switch arg[len("--allowlan="):] {
-			case "true":
-				config.AllowLan = true
-			case "false":
-				config.AllowLan = false
-			}
-
-		case strings.HasPrefix(arg, "--log="):
-			switch arg[len("--log="):] {
-			case "info":
-				config.LogLevel = log.InfoLevel
-			case "warn":
-				config.LogLevel = log.WarnLevel
-			case "error":
-				config.LogLevel = log.ErrorLevel
-			}
-		}
+func parseConfig(name string) *client.Config {
+	data, err := os.ReadFile(name)
+	if err != nil {
+		return nil
 	}
+	config := &client.Config{}
+	if err := yaml.Unmarshal(data, config); err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	return config
 }

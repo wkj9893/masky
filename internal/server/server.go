@@ -18,7 +18,7 @@ func Run(config *Config) {
 	if err != nil {
 		panic(err)
 	}
-	l, err := quic.ListenAddrEarly(fmt.Sprintf(":%v", config.Port), tlsConf, masky.QuicConfig)
+	l, err := quic.ListenAddrEarly(fmt.Sprintf(":%v", config.Port), tlsConf, nil)
 	if err != nil {
 		panic(err)
 	}

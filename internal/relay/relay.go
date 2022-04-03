@@ -44,11 +44,7 @@ func handleSession(s quic.EarlySession, addr []string) {
 
 func handleStream(stream quic.Stream, addr []string) error {
 	defer stream.Close()
-	session, err := quic.DialAddr(addr[rand.Intn(len(addr))], tls.ClientTLSConfig, masky.QuicConfig)
-	if err != nil {
-		panic(err)
-	}
-	dst, err := session.OpenStream()
+	dst, err := masky.ConectRemote(addr[rand.Intn(len(addr))])
 	if err != nil {
 		panic(err)
 	}

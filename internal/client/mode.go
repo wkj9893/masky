@@ -19,8 +19,25 @@ func (m Mode) MarshalJSON() ([]byte, error) {
 
 func (m *Mode) UnmarshalJSON(data []byte) error {
 	var mode string
-	err := json.Unmarshal(data, &mode)
-	if err != nil {
+	if err := json.Unmarshal(data, &mode); err != nil {
+		return err
+	}
+	switch mode {
+	case "direct":
+		*m = DirectMode
+	case "rule":
+		*m = RuleMode
+	case "global":
+		*m = GlobalMode
+	default:
+		return errors.New("unknown mode")
+	}
+	return nil
+}
+
+func (m *Mode) UnmarshalYAML(unmarshal func(any) error) error {
+	var mode string
+	if err := unmarshal(&mode); err != nil {
 		return err
 	}
 	switch mode {

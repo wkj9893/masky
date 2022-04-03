@@ -5,7 +5,6 @@ import (
 	"net"
 
 	"github.com/wkj9893/masky/internal/masky"
-	"github.com/wkj9893/masky/internal/quic"
 	"github.com/wkj9893/masky/internal/socks"
 )
 
@@ -27,7 +26,7 @@ func handleSocks(c *masky.Conn, config *Config) error {
 			return err
 		}
 	case GlobalMode:
-		if dst, err = quic.ConectRemote(); err != nil {
+		if dst, err = masky.ConectRemote(config.Proxies[0].Server[0]); err != nil {
 			return err
 		}
 		if _, err := dst.Write(append([]byte{5}, addr...)); err != nil {
@@ -43,7 +42,7 @@ func handleSocks(c *masky.Conn, config *Config) error {
 				return err
 			}
 		} else {
-			if dst, err = quic.ConectRemote(); err != nil {
+			if dst, err = masky.ConectRemote(config.Proxies[0].Server[0]); err != nil {
 				return err
 			}
 			if _, err = dst.Write(append([]byte{5}, addr...)); err != nil {

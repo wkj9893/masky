@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/wkj9893/masky/internal/masky"
-	"github.com/wkj9893/masky/internal/quic"
 )
 
 func HandleHttp(c *masky.Conn, config *Config) error {
@@ -32,7 +31,7 @@ func HandleHttp(c *masky.Conn, config *Config) error {
 			return err
 		}
 	case GlobalMode:
-		dst, err = quic.ConectRemote()
+		dst, err = masky.ConectRemote(config.Proxies[0].Server[0])
 		if err != nil {
 			return err
 		}
@@ -47,7 +46,7 @@ func HandleHttp(c *masky.Conn, config *Config) error {
 				return err
 			}
 		} else {
-			if dst, err = quic.ConectRemote(); err != nil {
+			if dst, err = masky.ConectRemote(config.Proxies[0].Server[0]); err != nil {
 				return err
 			}
 			local = false

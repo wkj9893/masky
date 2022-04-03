@@ -1,9 +1,11 @@
 package client
 
 import (
+	"fmt"
 	"io"
 	"net"
 
+	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/masky"
 	"github.com/wkj9893/masky/internal/socks"
 )
@@ -39,7 +41,14 @@ func handleSocks(c *masky.Conn, config *Config) error {
 		}
 		if isocode == "CN" {
 			if dst, err = masky.Dial(net.JoinHostPort(host, port)); err != nil {
-				return err
+				//	we try to use proxy
+				log.Info(fmt.Sprintf("fail to connect %v, use proxy instead", host))
+				if dst, err = masky.ConectRemote(config.Addr); err != nil {
+					return err
+				}
+				if _, err = dst.Write(append([]byte{5}, addr...)); err != nil {
+					return err
+				}
 			}
 		} else {
 			if dst, err = masky.ConectRemote(config.Addr); err != nil {

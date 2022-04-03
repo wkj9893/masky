@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/wkj9893/masky/internal/geoip"
-	"github.com/wkj9893/masky/internal/log"
 )
 
 var (
@@ -16,14 +15,12 @@ var (
 )
 
 func lookup(host, port string) (string, error) {
-	t := time.Now()
 	ip, err := net.LookupIP(host)
 	if err != nil {
 		return "", err
 	}
 	for _, i := range ip {
 		if isocode, err := geoip.Lookup(i); err == nil && isocode != "" {
-			log.Info(time.Since(t), host, isocode)
 			return isocode, nil
 		}
 	}

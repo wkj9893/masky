@@ -18,7 +18,7 @@ func Run(config *Config) {
 	if err != nil {
 		panic(err)
 	}
-	l, err := quic.ListenAddrEarly(fmt.Sprintf(":%v", config.Port), tlsConf, masky.QuicConfig)
+	l, err := quic.ListenAddrEarly(fmt.Sprintf(":%v", config.Port), tlsConf, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -33,19 +33,17 @@ func Run(config *Config) {
 }
 
 func handleSession(s quic.EarlySession) {
-	for {
-		stream, err := s.AcceptStream(context.Background())
-		if err != nil {
-			_ = s.CloseWithError(0, "")
-			return
-		}
-		if err := handleStream(stream, s); err != nil {
-			log.Error(err)
-		}
+	stream, err := s.AcceptStream(context.Background())
+	if err != nil {
+		_ = s.CloseWithError(0, "")
+		return
+	}
+	if err := handleStream(stream); err != nil {
+		log.Error(err)
 	}
 }
 
-func handleStream(stream quic.Stream, s quic.EarlySession) error {
+func handleStream(stream quic.Stream) error {
 	defer stream.Close()
 	c := masky.NewConn(stream)
 
@@ -61,7 +59,6 @@ func handleStream(stream quic.Stream, s quic.EarlySession) error {
 		if err != nil {
 			return err
 		}
-		log.Info(fmt.Sprintf("%v -> %v -> %v", s.RemoteAddr(), s.LocalAddr(), addr))
 		dst, err := masky.Dial(addr.String())
 		if err != nil {
 			return err
@@ -72,7 +69,6 @@ func handleStream(stream quic.Stream, s quic.EarlySession) error {
 		if err != nil {
 			return err
 		}
-		log.Info(fmt.Sprintf("%v -> %v -> %v", s.RemoteAddr(), s.LocalAddr(), req.URL.Hostname()))
 		if req.Method == http.MethodConnect {
 			dst, err := masky.Dial(req.Host)
 			if err != nil {

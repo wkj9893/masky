@@ -2,6 +2,7 @@ package masky
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"net"
 	"time"
@@ -44,14 +45,17 @@ func Relay(left, right io.ReadWriteCloser) {
 	ch := make(chan int)
 	go func() {
 		if _, err := io.Copy(left, right); err == nil {
+			fmt.Println("right->left")
 			left.Close()
 			right.Close()
 		}
 		ch <- 1
 	}()
 	if _, err := io.Copy(right, left); err == nil {
+		fmt.Println("left->right")
 		left.Close()
 		right.Close()
 	}
 	<-ch
+	fmt.Println("done")
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"os"
+	"runtime/debug"
 )
 
 type Level uint8
@@ -42,12 +43,14 @@ func Info(v ...interface{}) {
 func Warn(v ...interface{}) {
 	if logLevel <= WarnLevel {
 		warnLogger.Println(v...)
+		debug.PrintStack()
 	}
 }
 
 func Error(v ...interface{}) {
 	if logLevel <= ErrorLevel {
 		errorLogger.Println(v...)
+		debug.PrintStack()
 	}
 }
 

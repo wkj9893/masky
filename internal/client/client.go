@@ -18,6 +18,7 @@ func Run(config *Config) {
 		panic(err)
 	}
 	log.Info("client listen on port", config.Port)
+	SetConfig(config)
 	for {
 		if c, err := l.Accept(); err == nil {
 			go handleConn(c, config)

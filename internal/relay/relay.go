@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/masky"
@@ -42,20 +45,55 @@ func handleSession(s quic.EarlySession, config *Config) {
 
 func handleStream(stream quic.Stream, config *Config) error {
 	defer stream.Close()
-	var id [16]byte
-	_, err := stream.Read(id[:])
+
+	addr, id, err := auth(stream, *config)
 	if err != nil {
 		return err
 	}
-	for _, v := range config.Proxies {
-		if v.ID == id {
-			dst, err := masky.ConectRemote(v.Server, id)
-			if err != nil {
+	c := masky.NewConn(stream)
+	dst, err := masky.ConectRemote(addr, id)
+	if err != nil {
+		return err
+	}
+
+	head, err := c.Reader().Peek(1)
+	if err != nil {
+		return err
+	}
+	if head[0] == 5 { // socks
+		masky.Relay(c, dst)
+	} else { // http
+		req, err := http.ReadRequest(c.Reader())
+		if err != nil {
+			return err
+		}
+		if req.Method == http.MethodConnect {
+			if err = req.WriteProxy(dst); err != nil {
 				return err
 			}
-			go masky.Relay(stream, dst)
-			return nil
+			masky.Relay(c, dst)
+		} else {
+			if err = req.WriteProxy(dst); err != nil {
+				return err
+			}
+			if _, err = io.Copy(c, dst); err != nil {
+				return err
+			}
 		}
 	}
-	return errors.New("cannot authorzize user, fail to find uuid")
+	return nil
+}
+
+func auth(stream quic.Stream, config Config) (string, uuid.UUID, error) {
+	var id [16]byte
+	_, err := stream.Read(id[:])
+	if err != nil {
+		return "", id, err
+	}
+	for _, v := range config.Proxies {
+		if v.ID == id {
+			return v.Server, v.ID, nil
+		}
+	}
+	return "", id, errors.New("cannot authorzize user, fail to find uuid")
 }

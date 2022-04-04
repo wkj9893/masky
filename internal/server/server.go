@@ -47,8 +47,9 @@ func handleSession(s quic.EarlySession, config *Config) {
 func handleStream(stream quic.Stream, config *Config) error {
 	defer stream.Close()
 
-	auth(stream, *config)
-
+	if err := auth(stream, *config); err != nil {
+		return err
+	}
 	c := masky.NewConn(stream)
 
 	head, err := c.Reader().Peek(1)
@@ -102,7 +103,7 @@ func handleStream(stream quic.Stream, config *Config) error {
 
 func auth(stream quic.Stream, config Config) error {
 	var id [16]byte
-	_, err := stream.Write(id[:])
+	_, err := stream.Read(id[:])
 	if err != nil {
 		return err
 	}

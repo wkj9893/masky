@@ -1,33 +1,39 @@
 package client
 
 import (
-	"fmt"
-	"net/http"
-	"os"
-	"path"
+	"math/rand"
+	"sync"
+
+	"github.com/google/uuid"
 )
 
-func index(w http.ResponseWriter, r *http.Request) {
-	name := path.Join("./web/build", r.URL.Path)
-	if _, err := os.Stat(name); err != nil {
-		if data, err := os.ReadFile("./web/build/index.html"); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, err)
-		} else {
-			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, string(data))
-		}
-		return
-	}
-	http.ServeFile(w, r, name)
+var api struct {
+	sync.Mutex
+
+	config *Config
+	index  int
 }
 
-func startApi(config Config) error {
-	http.HandleFunc("/", index)
-	// TODO
-	// http.HandleFunc("/api/setting", setting)
-	if config.AllowLan {
-		return http.ListenAndServe(fmt.Sprintf(":%v", config.Port+1), nil)
+func SetConfig(c *Config) {
+	api.Lock()
+	defer api.Unlock()
+	api.config = c
+}
+
+func getIndex() (string, uuid.UUID) {
+	api.Lock()
+	defer api.Unlock()
+	p := api.config.Proxies
+	i := api.index
+	if i == 0 {
+		i = rand.Intn(len(p)-1) + 1
 	}
-	return http.ListenAndServe(fmt.Sprintf("127.0.0.1:%v", config.Port+1), nil)
+	return p[i].Server[0], p[i].ID
+}
+
+func setIndex(i int) {
+	api.Lock()
+	defer api.Unlock()
+	//	TODO check i with length of config proxies
+	api.index = i
 }

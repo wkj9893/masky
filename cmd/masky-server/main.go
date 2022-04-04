@@ -1,43 +1,32 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"os"
-	"strconv"
-	"strings"
 
 	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/server"
+	"gopkg.in/yaml.v3"
 )
 
-// default config
-var config = server.Config{
-	Port:     3000,
-	LogLevel: log.InfoLevel,
-}
-
 func main() {
-	parseArgs(os.Args[1:])
+	name := flag.String("c", "config.yaml", "relay config")
+	flag.Parse()
+	config := parseConfig(*name)
 	log.SetLogLevel(config.LogLevel)
-	server.Run(&config)
+	server.Run(config)
 }
 
-func parseArgs(args []string) {
-	for _, arg := range args {
-		switch {
-		case strings.HasPrefix(arg, "--port="):
-			if n, err := strconv.Atoi(arg[len("--port="):]); err == nil {
-				config.Port = uint16(n)
-			}
-
-		case strings.HasPrefix(arg, "--log="):
-			switch arg[len("--log="):] {
-			case "info":
-				config.LogLevel = log.InfoLevel
-			case "warn":
-				config.LogLevel = log.WarnLevel
-			case "error":
-				config.LogLevel = log.ErrorLevel
-			}
-		}
+func parseConfig(name string) *server.Config {
+	data, err := os.ReadFile(name)
+	if err != nil {
+		return nil
 	}
+	config := &server.Config{}
+	if err := yaml.Unmarshal(data, config); err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	return config
 }

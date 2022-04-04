@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -28,25 +29,26 @@ func Run(config *Config) {
 		if err != nil {
 			panic(err)
 		}
-		go handleSession(s)
+		go handleSession(s, config)
 	}
 }
 
-func handleSession(s quic.EarlySession) {
-	for {
-		stream, err := s.AcceptStream(context.Background())
-		if err != nil {
-			_ = s.CloseWithError(0, "")
-			return
-		}
-		if err := handleStream(stream, s); err != nil {
-			log.Error(err)
-		}
+func handleSession(s quic.EarlySession, config *Config) {
+	stream, err := s.AcceptStream(context.Background())
+	if err != nil {
+		_ = s.CloseWithError(0, "")
+		return
+	}
+	if err := handleStream(stream, config); err != nil {
+		log.Error(err)
 	}
 }
 
-func handleStream(stream quic.Stream, s quic.EarlySession) error {
+func handleStream(stream quic.Stream, config *Config) error {
 	defer stream.Close()
+
+	auth(stream, *config)
+
 	c := masky.NewConn(stream)
 
 	head, err := c.Reader().Peek(1)
@@ -61,7 +63,6 @@ func handleStream(stream quic.Stream, s quic.EarlySession) error {
 		if err != nil {
 			return err
 		}
-		log.Info(fmt.Sprintf("%v -> %v -> %v", s.RemoteAddr(), s.LocalAddr(), addr))
 		dst, err := masky.Dial(addr.String())
 		if err != nil {
 			return err
@@ -72,7 +73,6 @@ func handleStream(stream quic.Stream, s quic.EarlySession) error {
 		if err != nil {
 			return err
 		}
-		log.Info(fmt.Sprintf("%v -> %v -> %v", s.RemoteAddr(), s.LocalAddr(), req.URL.Hostname()))
 		if req.Method == http.MethodConnect {
 			dst, err := masky.Dial(req.Host)
 			if err != nil {
@@ -98,4 +98,18 @@ func handleStream(stream quic.Stream, s quic.EarlySession) error {
 		}
 	}
 	return nil
+}
+
+func auth(stream quic.Stream, config Config) error {
+	var id [16]byte
+	_, err := stream.Write(id[:])
+	if err != nil {
+		return err
+	}
+	for _, v := range config.Proxies {
+		if v.ID == id {
+			return nil
+		}
+	}
+	return errors.New("cannot authorzize user, fail to find uuid")
 }

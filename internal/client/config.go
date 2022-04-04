@@ -1,6 +1,7 @@
 package client
 
 import (
+	"github.com/google/uuid"
 	"github.com/wkj9893/masky/internal/log"
 )
 
@@ -13,6 +14,7 @@ type Config struct {
 }
 
 type Proxy struct {
-	Name   string   `yaml:"name"`
-	Server []string `yaml:"server"`
+	ID     uuid.UUID `yaml:"id"`
+	Name   string    `yaml:"name"`
+	Server []string  `yaml:"server"`
 }

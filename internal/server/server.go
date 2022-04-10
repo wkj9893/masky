@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
+	"strconv"
+	"strings"
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/wkj9893/masky/internal/log"
@@ -14,6 +15,7 @@ import (
 )
 
 func Run(config *Config) {
+	log.SetLogLevel(config.LogLevel)
 	tlsConf, err := tls.GenerateTLSConfig()
 	if err != nil {
 		panic(err)
@@ -35,15 +37,15 @@ func Run(config *Config) {
 func handleSession(s quic.EarlySession) {
 	stream, err := s.AcceptStream(context.Background())
 	if err != nil {
-		_ = s.CloseWithError(0, "")
+		log.Error(err)
 		return
 	}
-	if err := handleStream(stream); err != nil {
+	if err := handleStream(s, stream); err != nil {
 		log.Error(err)
 	}
 }
 
-func handleStream(stream quic.Stream) error {
+func handleStream(s quic.EarlySession, stream quic.Stream) error {
 	defer stream.Close()
 	c := masky.NewConn(stream)
 
@@ -59,6 +61,7 @@ func handleStream(stream quic.Stream) error {
 		if err != nil {
 			return err
 		}
+		log.Info(s.RemoteAddr(), "->", s.LocalAddr(), "->", addr)
 		dst, err := masky.Dial(addr.String())
 		if err != nil {
 			return err
@@ -69,6 +72,7 @@ func handleStream(stream quic.Stream) error {
 		if err != nil {
 			return err
 		}
+		log.Info(s.RemoteAddr(), "->", s.LocalAddr(), "->", req.Host)
 		if req.Method == http.MethodConnect {
 			dst, err := masky.Dial(req.Host)
 			if err != nil {
@@ -76,14 +80,8 @@ func handleStream(stream quic.Stream) error {
 			}
 			masky.Relay(c, dst)
 		} else {
-			client := http.Client{
-				CheckRedirect: func(req *http.Request, via []*http.Request) error {
-					return http.ErrUseLastResponse
-				},
-				Timeout: 5 * time.Second,
-			}
 			req.RequestURI = ""
-			resp, err := client.Do(req)
+			resp, err := masky.DefaultClient.Do(req)
 			if err != nil {
 				return err
 			}
@@ -94,4 +92,31 @@ func handleStream(stream quic.Stream) error {
 		}
 	}
 	return nil
+}
+
+func ParseArgs(args []string) *Config {
+	// default config
+	config := &Config{
+		Port:     3000,
+		LogLevel: log.InfoLevel,
+	}
+	for _, arg := range args {
+		switch {
+		case strings.HasPrefix(arg, "--port="):
+			if n, err := strconv.Atoi(arg[len("--port="):]); err == nil {
+				config.Port = uint16(n)
+			}
+
+		case strings.HasPrefix(arg, "--log="):
+			switch arg[len("--log="):] {
+			case "info":
+				config.LogLevel = log.InfoLevel
+			case "warn":
+				config.LogLevel = log.WarnLevel
+			case "error":
+				config.LogLevel = log.ErrorLevel
+			}
+		}
+	}
+	return config
 }

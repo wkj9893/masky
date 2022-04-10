@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"math/big"
+	"sync"
 )
 
 const defaultALPN = "masky"
@@ -13,7 +14,7 @@ const defaultALPN = "masky"
 var ClientTLSConfig = &tls.Config{
 	InsecureSkipVerify: true,
 	NextProtos:         []string{defaultALPN},
-	ClientSessionCache: tls.NewLRUClientSessionCache(1024),
+	ClientSessionCache: newSessionCache(),
 	CipherSuites:       []uint16{tls.TLS_CHACHA20_POLY1305_SHA256},
 }
 
@@ -34,4 +35,29 @@ func GenerateTLSConfig() (*tls.Config, error) {
 		}},
 		NextProtos: []string{defaultALPN},
 	}, nil
+}
+
+type sessionCache struct {
+	sync.Mutex
+
+	m map[string]*tls.ClientSessionState
+}
+
+func newSessionCache() *sessionCache {
+	return &sessionCache{
+		m: map[string]*tls.ClientSessionState{},
+	}
+}
+
+func (c *sessionCache) Get(sessionKey string) (*tls.ClientSessionState, bool) {
+	c.Lock()
+	defer c.Unlock()
+	cs, ok := c.m[sessionKey]
+	return cs, ok
+}
+
+func (c *sessionCache) Put(sessionKey string, cs *tls.ClientSessionState) {
+	c.Lock()
+	defer c.Unlock()
+	c.m[sessionKey] = cs
 }

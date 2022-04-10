@@ -26,7 +26,8 @@ func handleSocks(c *masky.Conn, config *Config) error {
 			return err
 		}
 	case GlobalMode:
-		if dst, err = masky.ConectRemote(getIndex()); err != nil {
+		addr, id := getIndex()
+		if dst, err = masky.ConectRemote(addr, id, tlsConf); err != nil {
 			return err
 		}
 		if _, err := dst.Write(append([]byte{5}, addr...)); err != nil {
@@ -42,7 +43,8 @@ func handleSocks(c *masky.Conn, config *Config) error {
 				return err
 			}
 		} else {
-			if dst, err = masky.ConectRemote(getIndex()); err != nil {
+			addr, id := getIndex()
+			if dst, err = masky.ConectRemote(addr, id, tlsConf); err != nil {
 				return err
 			}
 			if _, err = dst.Write(append([]byte{5}, addr...)); err != nil {

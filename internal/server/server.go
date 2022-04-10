@@ -5,16 +5,18 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
+	"os"
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/masky"
 	"github.com/wkj9893/masky/internal/socks"
 	"github.com/wkj9893/masky/internal/tls"
+	"gopkg.in/yaml.v3"
 )
 
 func Run(config *Config) {
+	log.SetLogLevel(config.LogLevel)
 	tlsConf, err := tls.GenerateTLSConfig()
 	if err != nil {
 		panic(err)
@@ -36,11 +38,11 @@ func Run(config *Config) {
 func handleSession(s quic.EarlySession, config *Config) {
 	stream, err := s.AcceptStream(context.Background())
 	if err != nil {
-		_ = s.CloseWithError(0, "")
+		log.Warn("server error", err)
 		return
 	}
 	if err := handleStream(stream, config); err != nil {
-		log.Error(err)
+		log.Warn("server error", err)
 	}
 }
 
@@ -81,14 +83,8 @@ func handleStream(stream quic.Stream, config *Config) error {
 			}
 			masky.Relay(c, dst)
 		} else {
-			client := http.Client{
-				CheckRedirect: func(req *http.Request, via []*http.Request) error {
-					return http.ErrUseLastResponse
-				},
-				Timeout: 5 * time.Second,
-			}
 			req.RequestURI = ""
-			resp, err := client.Do(req)
+			resp, err := masky.DefaultClient.Do(req)
 			if err != nil {
 				return err
 			}
@@ -113,4 +109,16 @@ func auth(stream quic.Stream, config Config) error {
 		}
 	}
 	return errors.New("cannot authorzize user, fail to find uuid")
+}
+
+func ParseConfig(name string) (*Config, error) {
+	data, err := os.ReadFile(name)
+	if err != nil {
+		return nil, err
+	}
+	c := &Config{}
+	if err := yaml.Unmarshal(data, c); err != nil {
+		return nil, err
+	}
+	return c, nil
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/wkj9893/masky/internal/masky"
 )
 
-func HandleHttp(c *masky.Conn, config *Config) error {
+func handleHttp(c *masky.Conn, config *Config) error {
 	defer c.Close()
 	local := true
 	req, err := http.ReadRequest(c.Reader())
@@ -31,7 +31,8 @@ func HandleHttp(c *masky.Conn, config *Config) error {
 			return err
 		}
 	case GlobalMode:
-		dst, err = masky.ConectRemote(getIndex())
+		addr, id := getIndex()
+		dst, err = masky.ConectRemote(addr, id, tlsConf)
 		if err != nil {
 			return err
 		}
@@ -46,7 +47,8 @@ func HandleHttp(c *masky.Conn, config *Config) error {
 				return err
 			}
 		} else {
-			if dst, err = masky.ConectRemote(getIndex()); err != nil {
+			addr, id := getIndex()
+			if dst, err = masky.ConectRemote(addr, id, tlsConf); err != nil {
 				return err
 			}
 			local = false
@@ -54,7 +56,6 @@ func HandleHttp(c *masky.Conn, config *Config) error {
 	default:
 		panic("unknown mode")
 	}
-
 	defer dst.Close()
 	if req.Method == http.MethodConnect {
 		if !local {

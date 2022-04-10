@@ -1,0 +1,7 @@
+port: 5000
+log_level: warn
+
+proxies:
+  - { id: f5e9c8e3-be6f-4db6-86c0-6c3c55015d70 }
+  - { id: 42806831-9ae9-49e3-8d48-7f274b2808d3 }
+

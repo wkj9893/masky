@@ -6,15 +6,20 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 
 	"github.com/google/uuid"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/masky"
 	"github.com/wkj9893/masky/internal/tls"
+	"gopkg.in/yaml.v3"
 )
 
+var tlsConf = tls.ClientTLSConfig()
+
 func Run(config *Config) {
+	log.SetLogLevel(config.LogLevel)
 	tlsConf, err := tls.GenerateTLSConfig()
 	if err != nil {
 		panic(err)
@@ -35,11 +40,11 @@ func Run(config *Config) {
 func handleSession(s quic.EarlySession, config *Config) {
 	stream, err := s.AcceptStream(context.Background())
 	if err != nil {
-		_ = s.CloseWithError(0, "")
+		log.Warn("relay error:", err)
 		return
 	}
 	if err := handleStream(stream, config); err != nil {
-		log.Error(err)
+		log.Warn("relay error:", err)
 	}
 }
 
@@ -51,7 +56,7 @@ func handleStream(stream quic.Stream, config *Config) error {
 		return err
 	}
 	c := masky.NewConn(stream)
-	dst, err := masky.ConectRemote(addr, id)
+	dst, err := masky.ConectRemote(addr, id, tlsConf)
 	if err != nil {
 		return err
 	}
@@ -96,4 +101,16 @@ func auth(stream quic.Stream, config Config) (string, uuid.UUID, error) {
 		}
 	}
 	return "", id, errors.New("cannot authorzize user, fail to find uuid")
+}
+
+func ParseConfig(name string) (*Config, error) {
+	data, err := os.ReadFile(name)
+	if err != nil {
+		return nil, err
+	}
+	c := &Config{}
+	if err := yaml.Unmarshal(data, c); err != nil {
+		return nil, err
+	}
+	return c, nil
 }

@@ -7,15 +7,15 @@ export function Dashboard() {
       <header>
         Masky Client
       </header>
-      <div className="container ">
+      <div className="container">
         <Link to="/">
           Overview
         </Link>
-        <Link to="/setting">
-          Setting
+        <Link to="/config">
+          Config
         </Link>
-        <Link to="/connections">
-          Connections
+        <Link to="/proxies">
+          Proxies
         </Link>
         <Link to="/logs">
           Logs

@@ -1,64 +1,55 @@
-import { FormEvent, FormEventHandler, useEffect, useState } from "react";
-import "./setting.scss";
+import { FormEvent, useEffect, useState } from "react";
+import "./config.scss";
 
-interface Setting {
+interface Config {
   port: number;
   mode: Mode;
-  addr: string;
-  password: string;
   allowLan: boolean;
   logLevel: LogLevel;
 }
 type Mode = "direct" | "rule" | "global";
 type LogLevel = "info" | "warn" | "error";
 
-export function SettingsPage() {
+export function ConfigPage() {
   const [port, setPort] = useState(0);
   const [mode, setMode] = useState("");
-  const [addr, setAddr] = useState("");
-  const [dns, setDns] = useState("");
-  const [password, setPassword] = useState("");
   const [allowLan, setAllowLan] = useState("true");
   const [logLevel, setLogLevel] = useState("info");
 
   useEffect(() => {
     const fn = async () => {
-      const response = await fetch("/api/setting");
-      const setting: Setting = await response.json();
-      setPort(setting.port);
-      setMode(setting.mode);
-      setAddr(setting.addr);
-      setPassword(setting.password);
-      setAllowLan(setting.allowLan ? "true" : "false");
-      setLogLevel(setting.logLevel);
+      const response = await fetch("/api/config");
+      const config: Config = await response.json();
+      setPort(config.port);
+      setMode(config.mode);
+      setAllowLan(config.allowLan ? "true" : "false");
+      setLogLevel(config.logLevel);
     };
     fn();
   }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const setting: Setting = {
+    const config: Config = {
       port,
       mode: mode as Mode,
-      addr,
-      password,
       allowLan: allowLan === "true" ? true : false,
       logLevel: logLevel as LogLevel,
     };
-    const response = await fetch("/api/setting", {
-      method: "PATCH",
-      body: JSON.stringify(setting),
+    const response = await fetch("/api/config", {
+      method: "PUT",
+      body: JSON.stringify(config),
     });
     if (response.ok) {
-      alert("successfully update setting");
+      alert("successfully update config");
       return;
     }
-    console.error("fail to update setting", response);
+    console.error("fail to update config", response);
   }
 
   return (
     <main>
-      <h3>Setting</h3>
+      <h3>Config</h3>
       <form
         onSubmit={handleSubmit}
       >
@@ -84,36 +75,6 @@ export function SettingsPage() {
             <option value={"rule"}>rule</option>
             <option value={"global"}>global</option>
           </select>
-        </label>
-        <label>
-          Addr:
-          <input
-            value={addr}
-            onChange={(e) => {
-              setAddr(e.target.value);
-            }}
-          />
-        </label>
-
-        <label>
-          Dns:
-          <input
-            value={dns}
-            onChange={(e) => {
-              setDns(e.target.value);
-            }}
-          />
-        </label>
-
-        <label>
-          Password:
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-            }}
-          />
         </label>
 
         <label>
@@ -143,7 +104,7 @@ export function SettingsPage() {
           </select>
         </label>
 
-        <button>Update Setting</button>
+        <button>Update Config</button>
       </form>
     </main>
   );

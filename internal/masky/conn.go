@@ -2,9 +2,9 @@ package masky
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"time"
 )
 
@@ -34,28 +34,35 @@ func (c *Conn) Close() error {
 }
 
 const (
-	defaultDialTimeout = 5 * time.Second
+	defaultTimeout = 5 * time.Second
 )
 
+var DefaultClient = http.Client{
+	Transport: &http.Transport{
+		Proxy: nil,
+	},
+	CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	},
+	Timeout: defaultTimeout,
+}
+
 func Dial(addr string) (net.Conn, error) {
-	return net.DialTimeout("tcp", addr, defaultDialTimeout)
+	return net.DialTimeout("tcp", addr, defaultTimeout)
 }
 
 func Relay(left, right io.ReadWriteCloser) {
 	ch := make(chan int)
 	go func() {
 		if _, err := io.Copy(left, right); err == nil {
-			fmt.Println("right->left")
 			left.Close()
 			right.Close()
 		}
 		ch <- 1
 	}()
 	if _, err := io.Copy(right, left); err == nil {
-		fmt.Println("left->right")
 		left.Close()
 		right.Close()
 	}
 	<-ch
-	fmt.Println("done")
 }

@@ -10,11 +10,13 @@ import (
 
 const defaultALPN = "masky"
 
-var ClientTLSConfig = &tls.Config{
-	InsecureSkipVerify: true,
-	NextProtos:         []string{defaultALPN},
-	ClientSessionCache: tls.NewLRUClientSessionCache(1024),
-	CipherSuites:       []uint16{tls.TLS_CHACHA20_POLY1305_SHA256},
+func ClientTLSConfig() *tls.Config {
+	return &tls.Config{
+		InsecureSkipVerify: true,
+		NextProtos:         []string{defaultALPN},
+		ClientSessionCache: tls.NewLRUClientSessionCache(64),
+		CipherSuites:       []uint16{tls.TLS_CHACHA20_POLY1305_SHA256},
+	}
 }
 
 func GenerateTLSConfig() (*tls.Config, error) {

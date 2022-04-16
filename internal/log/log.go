@@ -86,3 +86,16 @@ func (l Level) String() string {
 		return "unknown"
 	}
 }
+
+func NewLevel(level string) Level {
+	switch level {
+	case "info":
+		return InfoLevel
+	case "warn":
+		return WarnLevel
+	case "error":
+		return ErrorLevel
+	default:
+		return InfoLevel
+	}
+}

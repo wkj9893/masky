@@ -48,3 +48,16 @@ func (m Mode) String() string {
 		return "unknown"
 	}
 }
+
+func NewMode(m string) Mode {
+	switch m {
+	case "direct":
+		return DirectMode
+	case "rule":
+		return RuleMode
+	case "global":
+		return GlobalMode
+	default:
+		return RuleMode
+	}
+}

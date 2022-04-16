@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/wkj9893/masky/internal/log"
@@ -30,22 +28,22 @@ func Run(config *Config) {
 		if err != nil {
 			panic(err)
 		}
-		go handleSession(s)
+		go handleConn(s)
 	}
 }
 
-func handleSession(s quic.EarlySession) {
-	stream, err := s.AcceptStream(context.Background())
+func handleConn(c quic.EarlyConnection) {
+	stream, err := c.AcceptStream(context.Background())
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	if err := handleStream(s, stream); err != nil {
+	if err := handleStream(stream, c.LocalAddr().String(), c.RemoteAddr().String()); err != nil {
 		log.Error(err)
 	}
 }
 
-func handleStream(s quic.EarlySession, stream quic.Stream) error {
+func handleStream(stream quic.Stream, local string, remote string) error {
 	defer stream.Close()
 	c := masky.NewConn(stream)
 
@@ -53,32 +51,33 @@ func handleStream(s quic.EarlySession, stream quic.Stream) error {
 	if err != nil {
 		return err
 	}
-	if head[0] == 5 { // socks
-		if _, err = c.Reader().ReadByte(); err != nil {
+	switch head[0] {
+	case 5: // socks
+		if _, err := c.Reader().ReadByte(); err != nil {
 			return err
 		}
-		addr, err := socks.ReadAddr(c, make([]byte, 256))
+		addr, err := socks.ReadAddr(stream, make([]byte, 256))
 		if err != nil {
 			return err
 		}
-		log.Info(s.RemoteAddr(), "->", s.LocalAddr(), "->", addr)
+		log.Info(remote, "->", local, "->", addr)
 		dst, err := masky.Dial(addr.String())
 		if err != nil {
 			return err
 		}
-		masky.Relay(c, dst)
-	} else { // http
+		masky.Relay(stream, dst)
+	default: // http
 		req, err := http.ReadRequest(c.Reader())
 		if err != nil {
 			return err
 		}
-		log.Info(s.RemoteAddr(), "->", s.LocalAddr(), "->", req.Host)
+		log.Info(remote, "->", local, "->", req.Host)
 		if req.Method == http.MethodConnect {
 			dst, err := masky.Dial(req.Host)
 			if err != nil {
 				return err
 			}
-			masky.Relay(c, dst)
+			masky.Relay(stream, dst)
 		} else {
 			req.RequestURI = ""
 			resp, err := masky.DefaultClient.Do(req)
@@ -86,37 +85,10 @@ func handleStream(s quic.EarlySession, stream quic.Stream) error {
 				return err
 			}
 			defer resp.Body.Close()
-			if err = resp.Write(c); err != nil {
+			if err = resp.Write(stream); err != nil {
 				return err
 			}
 		}
 	}
 	return nil
-}
-
-func ParseArgs(args []string) *Config {
-	// default config
-	config := &Config{
-		Port:     3000,
-		LogLevel: log.InfoLevel,
-	}
-	for _, arg := range args {
-		switch {
-		case strings.HasPrefix(arg, "--port="):
-			if n, err := strconv.Atoi(arg[len("--port="):]); err == nil {
-				config.Port = uint16(n)
-			}
-
-		case strings.HasPrefix(arg, "--log="):
-			switch arg[len("--log="):] {
-			case "info":
-				config.LogLevel = log.InfoLevel
-			case "warn":
-				config.LogLevel = log.WarnLevel
-			case "error":
-				config.LogLevel = log.ErrorLevel
-			}
-		}
-	}
-	return config
 }

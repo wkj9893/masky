@@ -16,12 +16,12 @@ func TestMain(t *testing.T) {
 	clientConf := &client.Config{
 		Port:     3000,
 		Mode:     client.GlobalMode,
-		Addr:     "127.0.0.1:3000",
-		AllowLan: true,
+		Addr:     "127.0.0.1:4000",
+		AllowLan: false,
 		LogLevel: log.InfoLevel,
 	}
 	serverConf := &server.Config{
-		Port:     3000,
+		Port:     4000,
 		LogLevel: log.InfoLevel,
 	}
 	go func() {
@@ -32,8 +32,36 @@ func TestMain(t *testing.T) {
 	}()
 
 	time.Sleep(time.Millisecond)
-	os.Setenv("http_proxy", fmt.Sprintf("http://127.0.0.1:%v", clientConf.Port))
-	if _, err := http.Get("http://example.com"); err != nil {
+
+	httpProxy := fmt.Sprintf("http://127.0.0.1:%v", clientConf.Port)
+	socksProxy := fmt.Sprintf("socks5://127.0.0.1:%v", clientConf.Port)
+	os.Setenv("http_proxy", httpProxy)
+	if err := get("http://example.com"); err != nil {
 		t.Error(err)
 	}
+
+	os.Setenv("https_proxy", httpProxy)
+	if err := get("https://example.com"); err != nil {
+		t.Error(err)
+	}
+
+	os.Setenv("http_proxy", socksProxy)
+	if err := get("http://example.com"); err != nil {
+		t.Error(err)
+	}
+
+	os.Setenv("https_proxy", socksProxy)
+	if err := get("https://example.com"); err != nil {
+		t.Error(err)
+	}
+}
+
+func get(url string) error {
+	c := http.Client{
+		Timeout: 3 * time.Second,
+	}
+	if _, err := c.Get(url); err != nil {
+		return err
+	}
+	return nil
 }

@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"net"
@@ -10,15 +11,15 @@ import (
 	"github.com/wkj9893/masky/internal/masky"
 )
 
-func HandleHttp(c *masky.Conn, config *Config) error {
+func handleHttp(c *masky.Conn, config *Config) error {
 	defer c.Close()
-	local := true
-	req, err := http.ReadRequest(c.Reader())
+	req, err := http.ReadRequest(bufio.NewReader(c))
 	if err != nil {
 		return err
 	}
 
 	var dst io.ReadWriteCloser
+	local := true
 	host := req.URL.Hostname()
 	port := req.URL.Port()
 	if port == "" {
@@ -40,7 +41,7 @@ func HandleHttp(c *masky.Conn, config *Config) error {
 	case RuleMode:
 		isocode, err := masky.Lookup(host, port)
 		if err != nil {
-			return nil
+			return err
 		}
 		if isocode == "CN" {
 			if dst, err = masky.Dial(net.JoinHostPort(host, port)); err != nil {

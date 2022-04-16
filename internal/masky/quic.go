@@ -8,17 +8,17 @@ import (
 )
 
 func ConectRemote(addr string) (quic.Stream, error) {
-	session, err := quic.DialAddrEarly(addr, tls.ClientTLSConfig, quicConfig)
+	c, err := quic.DialAddrEarly(addr, tls.ClientTLSConfig, quicConfig)
 	if err != nil {
 		return nil, err
 	}
-	stream, err := session.OpenStream()
+	stream, err := c.OpenStream()
 	if err != nil {
 		return nil, err
 	}
 	return stream, nil
 }
 
-var quicConfig = &quic.Config {
-  MaxIdleTimeout: time.Second,
+var quicConfig = &quic.Config{
+	MaxIdleTimeout: time.Second,
 }

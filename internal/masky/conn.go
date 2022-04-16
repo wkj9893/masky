@@ -21,11 +21,11 @@ func (c *Conn) Reader() *bufio.Reader {
 	return c.r
 }
 
-func (c *Conn) Read(b []byte) (n int, err error) {
+func (c *Conn) Read(b []byte) (int, error) {
 	return c.r.Read(b)
 }
 
-func (c *Conn) Write(b []byte) (n int, err error) {
+func (c *Conn) Write(b []byte) (int, error) {
 	return c.rwc.Write(b)
 }
 

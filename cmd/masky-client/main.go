@@ -2,17 +2,16 @@ package main
 
 import (
 	"flag"
-	"os"
 
 	"github.com/wkj9893/masky/internal/client"
 	"github.com/wkj9893/masky/internal/log"
 )
 
 func main() {
-	client.Run(parseArgs(os.Args[1:]))
+	client.Run(parseArgs())
 }
 
-func parseArgs(args []string) *client.Config {
+func parseArgs() *client.Config {
 	port := flag.Int("port", 1080, "local listen port")
 	mode := flag.String("mode", "rule", "client mode(direct|rule|global)")
 	addr := flag.String("addr", "127.0.0.1:1081", "remote server addr")

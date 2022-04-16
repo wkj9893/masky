@@ -13,7 +13,7 @@ func main() {
 }
 
 func parseArgs(args []string) *server.Config {
-	port := flag.Int("port", 3000, "local listen port")
+	port := flag.Int("port", 1081, "local listen port")
 	logLevel := flag.String("log", "info", "logLevel(info|warn|error)")
 	flag.Parse()
 	return &server.Config{

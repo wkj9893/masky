@@ -21,28 +21,26 @@ func Run(config *Config) {
 	log.Info("client listen on port", config.Port)
 	for {
 		if c, err := l.Accept(); err == nil {
-			go handleConn(c, config)
+			go handleConn(masky.NewConn(c), config)
 		} else {
 			panic(err)
 		}
 	}
 }
 
-func handleConn(c net.Conn, config *Config) {
-	defer c.Close()
-	conn := masky.NewConn(c)
-	head, err := conn.Reader().Peek(1)
+func handleConn(c *masky.Conn, config *Config) {
+	head, err := c.Reader().Peek(1)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 	switch head[0] {
 	case 5: // socks
-		if err := handleSocks(conn, config); err != nil {
+		if err := handleSocks(c, config); err != nil {
 			log.Warn(err)
 		}
 	default: // http
-		if err := handleHttp(conn, config); err != nil {
+		if err := handleHttp(c, config); err != nil {
 			log.Warn(err)
 		}
 	}

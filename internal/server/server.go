@@ -38,15 +38,13 @@ func handleConn(c quic.EarlyConnection) {
 		log.Error(err)
 		return
 	}
-	if err := handleStream(stream, c.LocalAddr().String(), c.RemoteAddr().String()); err != nil {
+	if err := handleStream(masky.NewConn(stream), c.LocalAddr().String(), c.RemoteAddr().String()); err != nil {
 		log.Error(err)
 	}
 }
 
-func handleStream(stream quic.Stream, local string, remote string) error {
-	defer stream.Close()
-	c := masky.NewConn(stream)
-
+func handleStream(c *masky.Conn, local string, remote string) error {
+	defer c.Close()
 	head, err := c.Reader().Peek(1)
 	if err != nil {
 		return err
@@ -56,7 +54,7 @@ func handleStream(stream quic.Stream, local string, remote string) error {
 		if _, err := c.Reader().ReadByte(); err != nil {
 			return err
 		}
-		addr, err := socks.ReadAddr(stream, make([]byte, 256))
+		addr, err := socks.ReadAddr(c, make([]byte, 256))
 		if err != nil {
 			return err
 		}
@@ -65,7 +63,7 @@ func handleStream(stream quic.Stream, local string, remote string) error {
 		if err != nil {
 			return err
 		}
-		masky.Relay(stream, dst)
+		masky.Relay(c, dst)
 	default: // http
 		req, err := http.ReadRequest(c.Reader())
 		if err != nil {
@@ -77,7 +75,7 @@ func handleStream(stream quic.Stream, local string, remote string) error {
 			if err != nil {
 				return err
 			}
-			masky.Relay(stream, dst)
+			masky.Relay(c, dst)
 		} else {
 			req.RequestURI = ""
 			resp, err := masky.DefaultClient.Do(req)
@@ -85,7 +83,7 @@ func handleStream(stream quic.Stream, local string, remote string) error {
 				return err
 			}
 			defer resp.Body.Close()
-			if err = resp.Write(stream); err != nil {
+			if err = resp.Write(c); err != nil {
 				return err
 			}
 		}

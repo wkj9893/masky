@@ -36,21 +36,19 @@ func TestMain(t *testing.T) {
 	httpProxy := fmt.Sprintf("http://127.0.0.1:%v", clientConf.Port)
 	socksProxy := fmt.Sprintf("socks5://127.0.0.1:%v", clientConf.Port)
 	os.Setenv("http_proxy", httpProxy)
+	os.Setenv("https_proxy", httpProxy)
 	if err := get("http://example.com"); err != nil {
 		t.Error(err)
 	}
-
-	os.Setenv("https_proxy", httpProxy)
 	if err := get("https://example.com"); err != nil {
 		t.Error(err)
 	}
 
 	os.Setenv("http_proxy", socksProxy)
+	os.Setenv("https_proxy", socksProxy)
 	if err := get("http://example.com"); err != nil {
 		t.Error(err)
 	}
-
-	os.Setenv("https_proxy", socksProxy)
 	if err := get("https://example.com"); err != nil {
 		t.Error(err)
 	}

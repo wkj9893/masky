@@ -6,5 +6,5 @@ RUN apk add make && make build-server
 FROM alpine:latest
 WORKDIR /
 COPY --from=build /masky/masky-server .
-EXPOSE 3000/udp
+EXPOSE 1081/udp
 ENTRYPOINT [ "/masky-server" ]

@@ -3,7 +3,7 @@ package test
 import (
 	"fmt"
 	"net/http"
-	"os"
+	"net/url"
 	"testing"
 	"time"
 
@@ -32,34 +32,39 @@ func TestMain(t *testing.T) {
 	}()
 
 	time.Sleep(time.Millisecond)
-
-	httpProxy := fmt.Sprintf("http://127.0.0.1:%v", clientConf.Port)
-	socksProxy := fmt.Sprintf("socks5://127.0.0.1:%v", clientConf.Port)
-	os.Setenv("http_proxy", httpProxy)
-	os.Setenv("https_proxy", httpProxy)
-	if err := get("http://example.com"); err != nil {
-		t.Error(err)
-	}
-	if err := get("https://example.com"); err != nil {
-		t.Error(err)
-	}
-
-	os.Setenv("http_proxy", socksProxy)
-	os.Setenv("https_proxy", socksProxy)
-	if err := get("http://example.com"); err != nil {
-		t.Error(err)
-	}
-	if err := get("https://example.com"); err != nil {
-		t.Error(err)
-	}
-}
-
-func get(url string) error {
-	c := http.Client{
+	httpClient := http.Client{
 		Timeout: 3 * time.Second,
+		Transport: &http.Transport{
+			Proxy: func(r *http.Request) (*url.URL, error) {
+				return &url.URL{
+					Scheme: "http",
+					Host:   fmt.Sprintf("localhost:%v", clientConf.Port),
+				}, nil
+			},
+		},
 	}
-	if _, err := c.Get(url); err != nil {
-		return err
+	socksClient := http.Client{
+		Timeout: 3 * time.Second,
+		Transport: &http.Transport{
+			Proxy: func(r *http.Request) (*url.URL, error) {
+				return &url.URL{
+					Scheme: "socks5",
+					Host:   fmt.Sprintf("localhost:%v", clientConf.Port),
+				}, nil
+			},
+		},
 	}
-	return nil
+
+	if _, err := httpClient.Get("http://example.com"); err != nil {
+		t.Error(err)
+	}
+	if _, err := httpClient.Get("https://example.com"); err != nil {
+		t.Error(err)
+	}
+	if _, err := socksClient.Get("http://example.com"); err != nil {
+		t.Error(err)
+	}
+	if _, err := socksClient.Get("https://example.com"); err != nil {
+		t.Error(err)
+	}
 }

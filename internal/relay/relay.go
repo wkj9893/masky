@@ -4,16 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
-	"os"
 
 	"github.com/google/uuid"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/masky"
 	"github.com/wkj9893/masky/internal/tls"
-	"gopkg.in/yaml.v3"
 )
 
 var tlsConf = tls.ClientTLSConfig()
@@ -33,84 +29,46 @@ func Run(config *Config) {
 		if err != nil {
 			panic(err)
 		}
-		go handleSession(s, config)
+		go handleConn(s, config)
 	}
 }
 
-func handleSession(s quic.EarlySession, config *Config) {
+func handleConn(s quic.EarlyConnection, config *Config) {
 	stream, err := s.AcceptStream(context.Background())
 	if err != nil {
 		log.Warn("relay error:", err)
 		return
 	}
-	if err := handleStream(stream, config); err != nil {
+	if err := handleStream(masky.NewConn(stream), config); err != nil {
 		log.Warn("relay error:", err)
 	}
 }
 
-func handleStream(stream quic.Stream, config *Config) error {
-	defer stream.Close()
-
-	addr, id, err := auth(stream, *config)
+func handleStream(c *masky.Conn, config *Config) error {
+	defer c.Close()
+	addr, err := auth(c, *config)
 	if err != nil {
 		return err
 	}
-	c := masky.NewConn(stream)
-	dst, err := masky.ConectRemote(addr, id, tlsConf)
+	dst, err := masky.ConectRemote(addr, tlsConf)
 	if err != nil {
 		return err
 	}
-
-	head, err := c.Reader().Peek(1)
-	if err != nil {
-		return err
-	}
-	if head[0] == 5 { // socks
-		masky.Relay(c, dst)
-	} else { // http
-		req, err := http.ReadRequest(c.Reader())
-		if err != nil {
-			return err
-		}
-		if req.Method == http.MethodConnect {
-			if err = req.WriteProxy(dst); err != nil {
-				return err
-			}
-			masky.Relay(c, dst)
-		} else {
-			if err = req.WriteProxy(dst); err != nil {
-				return err
-			}
-			if _, err = io.Copy(c, dst); err != nil {
-				return err
-			}
-		}
-	}
+	masky.Relay(c, dst)
 	return nil
 }
 
-func auth(stream quic.Stream, config Config) (string, uuid.UUID, error) {
-	var id [16]byte
-	_, err := stream.Read(id[:])
+func auth(c *masky.Conn, config Config) (string, error) {
+	var i uuid.UUID
+	id, err := c.Reader().Peek(16)
 	if err != nil {
-		return "", id, err
+		return "", err
 	}
+	copy(i[:], id)
 	for _, v := range config.Proxies {
-		if v.ID == id {
-			return v.Server, v.ID, nil
+		if v.ID == i {
+			return v.Server, nil
 		}
 	}
-	return "", id, errors.New("cannot authorzize user, fail to find uuid")
-}
-
-func ParseConfig(name string) (*Config, error) {
-	data, err := os.ReadFile(name)
-	if err != nil {
-		return nil, err
-	}
-	c := &Config{}
-	if err := yaml.Unmarshal(data, c); err != nil {
-		return nil, err
-	}
-	return c, nil
+	return "", errors.New("cannot authorzize user, fail to find uuid")
 }

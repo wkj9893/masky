@@ -3,12 +3,10 @@ package client
 import (
 	"fmt"
 	"net"
-	"os"
 
 	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/masky"
 	"github.com/wkj9893/masky/internal/tls"
-	"gopkg.in/yaml.v3"
 )
 
 var tlsConf = tls.ClientTLSConfig()
@@ -30,40 +28,23 @@ func Run(config *Config) {
 	}()
 	for {
 		if c, err := l.Accept(); err == nil {
-			go handleConn(c, config)
+			go handleConn(masky.NewConn(c), config)
 		} else {
 			panic(err)
 		}
 	}
 }
 
-func handleConn(c net.Conn, config *Config) {
-	defer c.Close()
-	conn := masky.NewConn(c)
-	head, err := conn.Reader().Peek(1)
+func handleConn(c *masky.Conn, config *Config) {
+	head, err := c.Reader().Peek(1)
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	if head[0] == 5 {
-		if err := handleSocks(conn, config); err != nil {
-			log.Warn("client error:", err)
-		}
-	} else {
-		if err := handleHttp(conn, config); err != nil {
-			log.Warn("client error:", err)
-		}
+	switch head[0] {
+	case 5: // socks
+		handleSocks(c, config)
+	default: // http
+		handleHttp(c, config)
 	}
-}
-
-func ParseConfig(name string) (*Config, error) {
-	data, err := os.ReadFile(name)
-	if err != nil {
-		return nil, err
-	}
-	c := &Config{}
-	if err := yaml.Unmarshal(data, c); err != nil {
-		return nil, err
-	}
-	return c, nil
 }

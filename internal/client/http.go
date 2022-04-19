@@ -31,9 +31,11 @@ func handleHttp(c *masky.Conn, config *Config) error {
 			return err
 		}
 	case GlobalMode:
-		addr, id := getIndex()
-		dst, err = masky.ConectRemote(addr, id, tlsConf)
-		if err != nil {
+		remote, id := getIndex()
+		if dst, err = masky.ConectRemote(remote, tlsConf); err != nil {
+			return err
+		}
+		if _, err := dst.Write(id[:]); err != nil {
 			return err
 		}
 		local = false
@@ -47,8 +49,11 @@ func handleHttp(c *masky.Conn, config *Config) error {
 				return err
 			}
 		} else {
-			addr, id := getIndex()
-			if dst, err = masky.ConectRemote(addr, id, tlsConf); err != nil {
+			remote, id := getIndex()
+			if dst, err = masky.ConectRemote(remote, tlsConf); err != nil {
+				return err
+			}
+			if _, err := dst.Write(id[:]); err != nil {
 				return err
 			}
 			local = false

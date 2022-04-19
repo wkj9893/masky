@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	maxBufLen      = 256
-	atypIPv4       = 1
-	atypDomainName = 3
-	atypIPv6       = 4
+	maxBufLen      int  = 256
+	atypIPv4       byte = 1
+	atypDomainName byte = 3
+	atypIPv6       byte = 4
 )
 
 type Addr []byte // RFC 1928 section 5		ATYP + ADDR + PORT
@@ -24,7 +24,7 @@ func (addr Addr) String() string {
 	return net.JoinHostPort(string(addr[2:len(addr)-2]), port)
 }
 
-func Handshake(rw io.ReadWriter, port uint16) (Addr, error) {
+func Handshake(rw io.ReadWriter, port int) (Addr, error) {
 	buf := make([]byte, maxBufLen)
 	// read VER, NMETHODS
 	if _, err := io.ReadFull(rw, buf[:2]); err != nil {

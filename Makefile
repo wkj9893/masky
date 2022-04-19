@@ -1,6 +1,9 @@
 lint:
 	golangci-lint run
 
+test:
+	go test ./...
+
 Country.mmdb:
 	curl -o Country.mmdb https://raw.githubusercontent.com/P3TERX/GeoLite.mmdb/download/GeoLite2-Country.mmdb
 
@@ -15,4 +18,4 @@ build-server:
 dev: build-client
 	cd web && pnpm build
 
-.PHONY: lint build-client build-server dev
+.PHONY: lint test build-client build-server dev

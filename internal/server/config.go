@@ -6,7 +6,7 @@ import (
 )
 
 type Config struct {
-	Port     uint16    `yaml:"port"`
+	Port     int       `yaml:"port"`
 	LogLevel log.Level `yaml:"log_level"`
 	Proxies  []Proxy   `yaml:"proxies"`
 }

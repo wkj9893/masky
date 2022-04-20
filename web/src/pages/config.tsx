@@ -1,5 +1,4 @@
 import { FormEvent, useEffect, useState } from "react";
-import "./config.scss";
 
 interface Config {
   port: number;

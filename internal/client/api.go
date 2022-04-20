@@ -97,12 +97,18 @@ func handleProxies(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func StartApi() {
-	http.Handle("/", http.FileServer(http.Dir("../../web/build")))
-	http.HandleFunc("/api/config", handleConfig)
-	http.HandleFunc("/api/proxy", handleProxies)
-	log.Info("start api server at http://127.0.0.1:3001")
-	if err := http.ListenAndServe("127.0.0.1:3001", nil); err != nil {
+var server http.Server
+
+func StartApi(config *Config) {
+	addr := fmt.Sprintf(":%v", config.Port+1)
+
+	m := http.NewServeMux()
+	m.Handle("/", http.FileServer(http.Dir("../../web/build")))
+	m.HandleFunc("/api/config", handleConfig)
+	m.HandleFunc("/api/proxy", handleProxies)
+
+	log.Info(fmt.Sprintf("start api server at:%v", addr))
+	if err := http.ListenAndServe(addr, m); err != nil {
 		log.Error(err)
 	}
 }

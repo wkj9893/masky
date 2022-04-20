@@ -1,13 +1,12 @@
 import { Link } from "react-router-dom";
-import "./Dashboard.scss";
 
 export function Dashboard() {
   return (
-    <nav>
-      <header>
+    <nav className="flex flex-col gap-4 relative left-2 top-2 bg-gray-200 w-1/5">
+      <header className="text-4xl">
         Masky Client
       </header>
-      <div className="container">
+      <div className="text-2xl flex flex-col">
         <Link to="/">
           Overview
         </Link>

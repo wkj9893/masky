@@ -4,15 +4,11 @@ import { AboutPage } from "./pages/about";
 import { IndexPage } from "./pages";
 import { ConfigPage } from "./pages/config";
 import { LogsPage } from "./pages/logs";
-import { useTheme } from "./hooks/useTheme";
-import { ThemeButton } from "./components/ThemeButton";
 import { ProxiesPage } from "./pages/proxies";
-import "./app.scss";
 
 export default function App() {
-  const [theme, setTheme] = useTheme();
   return (
-    <div className="app">
+    <div className="flex">
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route path="/" element={<IndexPage />} />
@@ -23,15 +19,6 @@ export default function App() {
           <Route path="*" element={<NoMatch />}></Route>
         </Route>
       </Routes>
-      <ThemeButton
-        theme={theme}
-        setTheme={setTheme}
-        style={{
-          position: "absolute",
-          right: "100px",
-          display: "flex",
-        }}
-      />
     </div>
   );
 }
@@ -47,11 +34,13 @@ function Layout() {
 
 function NoMatch() {
   return (
-    <>
-      <h3>Nothing to see here</h3>
+    <div className="flex flex-col items-center gap-4">
+      <p className="text-xl">Nothing to see here</p>
       <Link to="/">
-        <h3>Go to the home page</h3>
+        <p className="text-2xl underline underline-offset-8">
+          Go to the home page
+        </p>
       </Link>
-    </>
+    </div>
   );
 }

@@ -12,7 +12,9 @@ import (
 	"github.com/wkj9893/masky/internal/tls"
 )
 
-var tlsConf = tls.ClientTLSConfig()
+var (
+	tlsConf = tls.ClientTLSConfig()
+)
 
 func Run(config *Config) {
 	log.SetLogLevel(config.LogLevel)

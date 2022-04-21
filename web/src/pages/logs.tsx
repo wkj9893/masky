@@ -4,10 +4,7 @@ export function LogsPage() {
   const [logs, setLogs] = useState(["hello", "world"]);
   return (
     <main>
-      <h3>Logs</h3>
-      {logs.map((log) => {
-        <p>{log}</p>;
-      })}
+      <p className="text-2xl">Logs</p>
     </main>
   );
 }

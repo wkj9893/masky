@@ -11,20 +11,26 @@ export function useTheme(): [
       const t = localStorage.getItem("theme");
       if (t) {
         setTheme(t);
-        document.querySelector(":root")!.setAttribute("theme", t);
-        return;
-      }
-      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        if (t == "dark") {
+          document.documentElement.setAttribute("class", "dark");
+        } else {
+          document.documentElement.removeAttribute("class");
+        }
+      } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
         setTheme("dark");
-        document.querySelector(":root")!.setAttribute("theme", "dark");
+        document.documentElement.setAttribute("class", "dark");
         localStorage.setItem("theme", "dark");
       } else {
         setTheme("light");
-        document.querySelector(":root")!.setAttribute("theme", "light");
+        document.documentElement.classList.remove("dark");
         localStorage.setItem("theme", "light");
       }
     } else {
-      document.querySelector(":root")!.setAttribute("theme", theme);
+      if (theme == "dark") {
+        document.documentElement.setAttribute("class", "dark");
+      } else {
+        document.documentElement.removeAttribute("class");
+      }
       localStorage.setItem("theme", theme);
     }
   }, [theme]);

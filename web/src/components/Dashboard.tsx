@@ -2,27 +2,38 @@ import { Link } from "react-router-dom";
 
 export function Dashboard() {
   return (
-    <nav className="flex flex-col gap-4 relative left-2 top-2 bg-gray-200 w-1/5">
-      <header className="text-4xl">
-        Masky Client
+    <nav className="grid grid-rows-[1fr_2fr] place-items-center">
+      <header className="text-4xl flex flex-col">
+        <p>Masky</p>
+        <p>Client</p>
       </header>
-      <div className="text-2xl flex flex-col">
-        <Link to="/">
-          Overview
-        </Link>
-        <Link to="/config">
-          Config
-        </Link>
-        <Link to="/proxies">
-          Proxies
-        </Link>
-        <Link to="/logs">
-          Logs
-        </Link>
-        <Link to="/about">
-          About
-        </Link>
-      </div>
+      <ul className="bg-gray-200 dark:bg-gray-800 text-2xl flex flex-col gap-2 p-6 divide-y divide-slate-200">
+        <li>
+          <Link to="/">
+            Overview
+          </Link>
+        </li>
+        <li>
+          <Link to="/config">
+            Config
+          </Link>
+        </li>
+        <li>
+          <Link to="/proxies">
+            Proxies
+          </Link>
+        </li>
+        <li>
+          <Link to="/logs">
+            Logs
+          </Link>
+        </li>
+        <li>
+          <Link to="/about">
+            About
+          </Link>
+        </li>
+      </ul>
     </nav>
   );
 }

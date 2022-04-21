@@ -3,4 +3,3 @@ cmd/masky-server/masky-server
 /masky-client
 /masky-server
 *.mmdb
-*.yaml

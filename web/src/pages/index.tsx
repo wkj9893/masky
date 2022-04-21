@@ -1,8 +1,8 @@
 export function IndexPage() {
   return (
     <main>
-      <h3>Overview</h3>
-      <button>Reconnect Server</button>
+      <p className="text-2xl">Overview</p>
+      <button className="text-xl">Reconnect Server</button>
     </main>
   );
 }

@@ -4,7 +4,7 @@ export function ConnectionsPage() {
   const [connections, setConnections] = useState([]);
   return (
     <main>
-      <h3>Connections</h3>
+      <p>Connections</p>
     </main>
   );
 }

@@ -38,9 +38,6 @@ const (
 )
 
 var DefaultClient = http.Client{
-	Transport: &http.Transport{
-		Proxy: nil,
-	},
 	CheckRedirect: func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse
 	},

@@ -2,17 +2,16 @@ package main
 
 import (
 	"flag"
-	"os"
 
 	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/server"
 )
 
 func main() {
-	server.Run(parseArgs(os.Args[1:]))
+	server.Run(parseArgs())
 }
 
-func parseArgs(args []string) *server.Config {
+func parseArgs() *server.Config {
 	port := flag.Int("port", 1081, "local listen port")
 	logLevel := flag.String("log", "info", "logLevel(info|warn|error)")
 	flag.Parse()

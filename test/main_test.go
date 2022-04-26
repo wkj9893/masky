@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sync"
 	"testing"
 	"time"
 
@@ -31,40 +32,54 @@ func TestMain(t *testing.T) {
 		server.Run(serverConf)
 	}()
 
-	time.Sleep(time.Millisecond)
+	time.Sleep(time.Second)
+	get(clientConf.Port, t)
+}
+
+func get(port int, t *testing.T) {
 	httpClient := http.Client{
 		Timeout: 3 * time.Second,
 		Transport: &http.Transport{
-			Proxy: func(r *http.Request) (*url.URL, error) {
-				return &url.URL{
-					Scheme: "http",
-					Host:   fmt.Sprintf("localhost:%v", clientConf.Port),
-				}, nil
-			},
+			Proxy: http.ProxyURL(&url.URL{
+				Scheme: "http",
+				Host:   fmt.Sprintf("127.0.0.1:%v", port),
+			}),
 		},
 	}
 	socksClient := http.Client{
 		Timeout: 3 * time.Second,
 		Transport: &http.Transport{
-			Proxy: func(r *http.Request) (*url.URL, error) {
-				return &url.URL{
-					Scheme: "socks5",
-					Host:   fmt.Sprintf("localhost:%v", clientConf.Port),
-				}, nil
-			},
+			Proxy: http.ProxyURL(&url.URL{
+				Scheme: "socks5",
+				Host:   fmt.Sprintf("127.0.0.1:%v", port),
+			}),
 		},
 	}
-
-	if _, err := httpClient.Get("http://example.com"); err != nil {
-		t.Error(err)
-	}
-	if _, err := httpClient.Get("https://example.com"); err != nil {
-		t.Error(err)
-	}
-	if _, err := socksClient.Get("http://example.com"); err != nil {
-		t.Error(err)
-	}
-	if _, err := socksClient.Get("https://example.com"); err != nil {
-		t.Error(err)
-	}
+	wg := sync.WaitGroup{}
+	wg.Add(4)
+	go func() {
+		if _, err := httpClient.Get("http://example.com"); err != nil {
+			t.Error(err)
+		}
+		wg.Done()
+	}()
+	go func() {
+		if _, err := httpClient.Get("https://example.com"); err != nil {
+			t.Error(err)
+		}
+		wg.Done()
+	}()
+	go func() {
+		if _, err := socksClient.Get("http://example.com"); err != nil {
+			t.Error(err)
+		}
+		wg.Done()
+	}()
+	go func() {
+		if _, err := socksClient.Get("https://example.com"); err != nil {
+			t.Error(err)
+		}
+		wg.Done()
+	}()
+	wg.Wait()
 }

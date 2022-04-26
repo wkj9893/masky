@@ -38,7 +38,7 @@ func Lookup(host, port string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	set(host, isocode)
+	Set(host, isocode)
 	return isocode, nil
 }
 
@@ -49,7 +49,7 @@ func get(host string) (string, bool) {
 	return isocode, ok
 }
 
-func set(host, isocode string) {
+func Set(host, isocode string) {
 	mu.Lock()
 	m[host] = isocode
 	mu.Unlock()

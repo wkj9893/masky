@@ -36,12 +36,8 @@ func handleConn(c *masky.Conn, config *Config) {
 	}
 	switch head[0] {
 	case 5: // socks
-		if err := handleSocks(c, config); err != nil {
-			log.Warn(err)
-		}
+		handleSocks(c, config)
 	default: // http
-		if err := handleHttp(c, config); err != nil {
-			log.Warn(err)
-		}
+		handleHttp(c, config)
 	}
 }

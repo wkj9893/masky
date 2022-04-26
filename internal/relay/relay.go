@@ -26,6 +26,7 @@ func Run(config *Config) {
 	if err != nil {
 		panic(err)
 	}
+	log.Info("start relay successfully")
 	for {
 		s, err := l.Accept(context.Background())
 		if err != nil {

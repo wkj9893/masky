@@ -6,15 +6,15 @@ import (
 )
 
 type Config struct {
-	Port     int       `yaml:"port"`
-	Mode     Mode      `yaml:"mode"`
-	AllowLan bool      `yaml:"allow_lan"`
-	LogLevel log.Level `yaml:"log_level"`
-	Proxies  []Proxy   `yaml:"proxies"`
+	Port     int       `yaml:"port" json:"port"`
+	Mode     Mode      `yaml:"mode" json:"mode"`
+	AllowLan bool      `yaml:"allowLan" json:"allowLan"`
+	LogLevel log.Level `yaml:"logLevel" json:"logLevel"`
+	Proxies  []Proxy   `yaml:"proxies" json:"proxies"`
 }
 
 type Proxy struct {
-	ID     uuid.UUID `yaml:"id"`
-	Name   string    `yaml:"name"`
-	Server []string  `yaml:"server"`
+	ID     uuid.UUID `yaml:"id" json:"id"`
+	Name   string    `yaml:"name" json:"name"`
+	Server []string  `yaml:"server" json:"server"`
 }

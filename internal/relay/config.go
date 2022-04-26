@@ -7,7 +7,7 @@ import (
 
 type Config struct {
 	Port     int       `yaml:"port"`
-	LogLevel log.Level `yaml:"log_level"`
+	LogLevel log.Level `yaml:"logLevel"`
 	Proxies  []Proxy   `yaml:"proxies"`
 }
 

@@ -69,14 +69,11 @@ func handleHttp(c *masky.Conn, config *Config) error {
 			}
 		}
 		fmt.Fprintf(c, "%v %v \r\n\r\n", req.Proto, http.StatusOK)
-		masky.Relay(c, dst)
-		return nil
+	} else {
+		if err = req.WriteProxy(dst); err != nil {
+			return err
+		}
 	}
-	if err = req.WriteProxy(dst); err != nil {
-		return err
-	}
-	if _, err = io.Copy(c, dst); err != nil {
-		return err
-	}
+	masky.Relay(c, dst)
 	return nil
 }

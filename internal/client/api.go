@@ -6,6 +6,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"path"
 	"sync"
 
 	"github.com/google/uuid"
@@ -13,10 +14,16 @@ import (
 )
 
 var api struct {
-	sync.Mutex
+	sync.RWMutex
 
 	config *Config
 	index  int
+}
+
+func getConfig() *Config {
+	api.RLock()
+	defer api.RUnlock()
+	return api.config
 }
 
 func setConfig(c *Config) {
@@ -26,8 +33,8 @@ func setConfig(c *Config) {
 }
 
 func getIndex() (string, uuid.UUID) {
-	api.Lock()
-	defer api.Unlock()
+	api.RLock()
+	defer api.RUnlock()
 	p := api.config.Proxies
 	i := api.index
 	if i == 0 {
@@ -49,7 +56,7 @@ func setIndex(i int) {
 func handleConfig(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		c, err := json.Marshal(api.config)
+		c, err := json.Marshal(getConfig())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, http.StatusText(http.StatusInternalServerError))
@@ -57,7 +64,7 @@ func handleConfig(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, string(c))
-	case http.MethodPut:
+	case http.MethodPatch:
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -79,36 +86,22 @@ func handleConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-func handleProxies(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		c, err := json.Marshal(api.config.Proxies)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, http.StatusText(http.StatusInternalServerError))
+
+func StartApi() {
+	port := getConfig().Port + 1
+	m := http.NewServeMux()
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		p := r.URL.Path
+		if p == "/config" || p == "/proxies" {
+			http.ServeFile(w, r, "../../web/build/index.html")
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, string(c))
-	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		fmt.Fprint(w, http.StatusText(http.StatusMethodNotAllowed))
-		return
-	}
-}
-
-var server http.Server
-
-func StartApi(config *Config) {
-	addr := fmt.Sprintf(":%v", config.Port+1)
-
-	m := http.NewServeMux()
-	m.Handle("/", http.FileServer(http.Dir("../../web/build")))
+		http.ServeFile(w, r, path.Join("../../web/build", r.URL.Path))
+	})
 	m.HandleFunc("/api/config", handleConfig)
-	m.HandleFunc("/api/proxy", handleProxies)
 
-	log.Info(fmt.Sprintf("start api server at:%v", addr))
-	if err := http.ListenAndServe(addr, m); err != nil {
+	log.Info(fmt.Sprintf("start http server at http://localhost:%v", port))
+	if err := http.ListenAndServe(fmt.Sprintf(":%v", port), m); err != nil {
 		log.Error(err)
 	}
 }

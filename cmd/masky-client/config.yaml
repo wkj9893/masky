@@ -1,0 +1,12 @@
+port: 5000
+mode: global
+allowLan: false
+logLevel: info
+
+proxies:
+  - { id: 00000000-0000-0000-0000-000000000000, name: dynamic }
+  - {
+      id: becf5b98-c4be-4071-9431-8c2ab9cc17e6,
+      name: first proxy,
+      server: [localhost:5001, localhost:5002],
+    }

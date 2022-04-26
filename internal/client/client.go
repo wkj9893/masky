@@ -26,7 +26,7 @@ func Run(config *Config) {
 	}
 	log.Info("client listen on port", config.Port)
 	go func() {
-		StartApi(config)
+		StartApi()
 	}()
 	for {
 		if c, err := l.Accept(); err == nil {

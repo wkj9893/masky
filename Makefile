@@ -15,4 +15,5 @@ build-client: Country.mmdb
 build-server:
 	$(GOBUILD) ./cmd/masky-server
 
-.PHONY: lint test build-client build-server
+
+.PHONY: lint test build-client build-server 

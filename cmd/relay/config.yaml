@@ -1,0 +1,5 @@
+port: 5001
+logLevel: info
+
+proxies:
+  - { id: becf5b98-c4be-4071-9431-8c2ab9cc17e6, server: localhost:5002 }

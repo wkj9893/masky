@@ -54,7 +54,6 @@ func handleStream(c *masky.Conn, local string, remote string, config *Config) er
 	if err != nil {
 		return err
 	}
-	fmt.Println(head[0])
 	switch head[0] {
 	case 5: // socks
 		if _, err := c.Reader().ReadByte(); err != nil {

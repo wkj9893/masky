@@ -3,13 +3,16 @@ package geoip
 import (
 	"net"
 
+	_ "embed"
+
 	"github.com/oschwald/maxminddb-golang"
 )
 
-const name = "Country.mmdb"
+//go:embed Country.mmdb
+var b []byte
 
 func Lookup(ip net.IP) (string, error) {
-	db, err := maxminddb.Open(name)
+	db, err := maxminddb.FromBytes(b)
 	if err != nil {
 		return "", err
 	}
@@ -20,7 +23,6 @@ func Lookup(ip net.IP) (string, error) {
 			ISOCode string `maxminddb:"iso_code"`
 		} `maxminddb:"country"`
 	}
-
 	if err := db.Lookup(ip, &record); err != nil {
 		return "", err
 	}

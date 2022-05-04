@@ -4,3 +4,4 @@ masky-client
 masky-server
 *.mmdb
 !internal/geoip/Country.mmdb
+.direnv

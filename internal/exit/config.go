@@ -1,4 +1,4 @@
-package server
+package exit
 
 import (
 	"github.com/google/uuid"
@@ -7,6 +7,9 @@ import (
 
 type Config struct {
 	Port     int       `yaml:"port"`
+	Type     string    `yaml:"type"`
+	Cert     string    `yaml:"cert"`
+	Key      string    `yaml:"key"`
 	LogLevel log.Level `yaml:"logLevel"`
 	Proxies  []Proxy   `yaml:"proxies"`
 }

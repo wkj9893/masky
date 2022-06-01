@@ -16,5 +16,6 @@ type Config struct {
 type Proxy struct {
 	ID     uuid.UUID `yaml:"id" json:"id"`
 	Name   string    `yaml:"name" json:"name"`
+	Type   string    `yaml:"type" json:"type"`
 	Server []string  `yaml:"server" json:"server"`
 }

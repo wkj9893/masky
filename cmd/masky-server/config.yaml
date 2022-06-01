@@ -1,5 +1,0 @@
-port: 5002
-logLevel: info
-
-proxies:
-  - { id: becf5b98-c4be-4071-9431-8c2ab9cc17e6 }

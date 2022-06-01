@@ -15,6 +15,7 @@ const (
 )
 
 type Addr []byte // RFC 1928 section 5		ATYP + ADDR + PORT
+var buf [256]byte
 
 func (addr Addr) String() string {
 	port := fmt.Sprint(256*int(addr[len(addr)-2]) + int(addr[len(addr)-1]))

@@ -1,0 +1,15 @@
+port: 443
+type: websocket
+cert: /etc/fullchain.pem
+key: /etc/privkey.pem
+logLevel: info
+proxies:
+  - id: f5e9c8e3-be6f-4db6-86c0-6c3c55015d70
+    type: quic
+    server: '127.0.0.1:5000'
+  - id: 42806831-9ae9-49e3-8d48-7f274b2808d3
+    type: websocket
+    server: 'example.com'
+  - id: eedcb0db-4c23-4186-b913-9cc8a54b5246
+    type: webtransport
+    server: 'example.com'

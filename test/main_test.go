@@ -10,8 +10,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/wkj9893/masky/internal/client"
+	"github.com/wkj9893/masky/internal/exit"
 	"github.com/wkj9893/masky/internal/relay"
-	"github.com/wkj9893/masky/internal/server"
 )
 
 var (
@@ -35,9 +35,9 @@ func TestClientRelayServer(t *testing.T) {
 			{ID: id2, Server: "127.0.0.1:3002"},
 		},
 	}
-	serverConfig := &server.Config{
+	serverConfig := &exit.Config{
 		Port: 3002,
-		Proxies: []server.Proxy{
+		Proxies: []exit.Proxy{
 			{ID: id2},
 		},
 	}
@@ -48,7 +48,7 @@ func TestClientRelayServer(t *testing.T) {
 		relay.Run(relayConfig)
 	}()
 	go func() {
-		server.Run(serverConfig)
+		exit.Run(serverConfig)
 	}()
 
 	time.Sleep(time.Millisecond)

@@ -1,0 +1,26 @@
+port: 1080
+mode: rule
+allowLan: false
+logLevel: info
+proxies:
+  - id: 00000000-0000-0000-0000-000000000000
+    name: dynamic
+  - id: f5e9c8e3-be6f-4db6-86c0-6c3c55015d70
+    name: first proxy
+    type: quic
+    server:
+      - '127.0.0.1:4000'
+      - 'foo.com'
+      - 'bar.com'
+  - id: 42806831-9ae9-49e3-8d48-7f274b2808d3
+    name: second proxy
+    type: websocket
+    server:
+      - example.com
+      - '127.0.0.1:5000'
+  - id: eedcb0db-4c23-4186-b913-9cc8a54b5246
+    name: third proxy
+    type: webtransport
+    server:
+      - example.com
+      - '127.0.0.1:5000'

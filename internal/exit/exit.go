@@ -1,4 +1,4 @@
-package relay
+package exit
 
 import (
 	"context"
@@ -14,12 +14,9 @@ import (
 	"github.com/marten-seemann/webtransport-go"
 	"github.com/wkj9893/masky/internal/log"
 	"github.com/wkj9893/masky/internal/masky"
+	"github.com/wkj9893/masky/internal/socks"
 	"github.com/wkj9893/masky/internal/tls"
 	"golang.org/x/net/websocket"
-)
-
-var (
-	tlsConf = tls.ClientTLSConfig()
 )
 
 func Run(config *Config) {
@@ -32,11 +29,11 @@ func Run(config *Config) {
 		})
 		for _, p := range config.Proxies {
 			m.Handle("/"+p.ID.String(), websocket.Handler(func(c *websocket.Conn) {
-				p, err := auth(p.ID, config)
+				err := auth(p.ID, config)
 				if err != nil {
 					return
 				}
-				handleConn(masky.NewConn(c), p, config)
+				handleConn(masky.NewConn(c), config)
 			}))
 		}
 		http.ListenAndServeTLS(fmt.Sprintf(":%v", config.Port), config.Cert, config.Key, m)
@@ -58,15 +55,20 @@ func Run(config *Config) {
 				if err != nil {
 					return
 				}
-				handleConn(masky.NewConn(stream), &p, config)
+				handleConn(masky.NewConn(stream), config)
 			})
 		}
 		s.ListenAndServeTLS(config.Cert, config.Key)
 	default:
+		tlsConf, err := tls.GenerateTLSConfig()
+		if err != nil {
+			panic(err)
+		}
 		l, err := quic.ListenAddrEarly(fmt.Sprintf(":%v", config.Port), tlsConf, nil)
 		if err != nil {
 			panic(err)
 		}
+		log.Info("start server successfully")
 		for {
 			c, err := l.Accept(context.Background())
 			if err != nil {
@@ -77,36 +79,66 @@ func Run(config *Config) {
 				panic(err)
 			}
 			conn := masky.NewConn(stream)
-			id, err := conn.Reader().Peek(16)
-			if err != nil {
+			var id uuid.UUID
+			if _, err := io.ReadFull(conn, id[:]); err != nil {
 				return
 			}
-			var i uuid.UUID
-			copy(i[:], id)
-			p, err := auth(uuid.UUID(i), config)
-			if err != nil {
-				return
-			}
-			handleConn(conn, p, config)
+			go handleConn(conn, config)
 		}
 	}
 }
 
-func handleConn(c io.ReadWriteCloser, p *Proxy, config *Config) error {
+func handleConn(c *masky.Conn, config *Config) error {
 	defer c.Close()
-	dst, err := conectRemote(p)
+	head, err := c.Reader().Peek(1)
 	if err != nil {
 		return err
 	}
-	masky.Relay(c, dst)
+	switch head[0] {
+	case 5: // socks
+		if _, err := c.Reader().ReadByte(); err != nil {
+			return err
+		}
+		addr, err := socks.ReadAddr(c, make([]byte, 256))
+		if err != nil {
+			return err
+		}
+		dst, err := masky.Dial(addr.String())
+		if err != nil {
+			return err
+		}
+		masky.Relay(c, dst)
+	default: // http
+		req, err := http.ReadRequest(c.Reader())
+		if err != nil {
+			return err
+		}
+		if req.Method == http.MethodConnect {
+			dst, err := masky.Dial(req.Host)
+			if err != nil {
+				return err
+			}
+			masky.Relay(c, dst)
+		} else {
+			req.RequestURI = ""
+			resp, err := masky.DefaultClient.Do(req)
+			if err != nil {
+				return err
+			}
+			defer resp.Body.Close()
+			if err = resp.Write(c); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
-func auth(id uuid.UUID, config *Config) (*Proxy, error) {
+func auth(id uuid.UUID, config *Config) error {
 	for _, v := range config.Proxies {
 		if v.ID == id {
-			return &v, nil
+			return nil
 		}
 	}
-	return nil, errors.New("cannot authorzize user, fail to find uuid")
+	return errors.New("cannot authorzize user, fail to find uuid")
 }

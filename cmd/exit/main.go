@@ -4,7 +4,7 @@ import (
 	"flag"
 	"os"
 
-	"github.com/wkj9893/masky/internal/server"
+	"github.com/wkj9893/masky/internal/exit"
 	"gopkg.in/yaml.v3"
 )
 
@@ -14,16 +14,16 @@ func main() {
 	if config, err := parseConfig(*name); err != nil {
 		panic(err)
 	} else {
-		server.Run(config)
+		exit.Run(config)
 	}
 }
 
-func parseConfig(name string) (*server.Config, error) {
+func parseConfig(name string) (*exit.Config, error) {
 	data, err := os.ReadFile(name)
 	if err != nil {
 		return nil, err
 	}
-	c := &server.Config{}
+	c := &exit.Config{}
 	if err := yaml.Unmarshal(data, c); err != nil {
 		return nil, err
 	}

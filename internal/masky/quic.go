@@ -7,7 +7,7 @@ import (
 	"github.com/wkj9893/masky/internal/tls"
 )
 
-func ConectRemote(addr string) (quic.Stream, error) {
+func ConnectRemote(addr string) (quic.Stream, error) {
 	c, err := quic.DialAddrEarly(addr, tls.ClientTLSConfig, quicConfig)
 	if err != nil {
 		return nil, err

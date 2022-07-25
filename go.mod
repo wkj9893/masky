@@ -3,7 +3,7 @@ module github.com/wkj9893/masky
 go 1.18
 
 require (
-	github.com/lucas-clemente/quic-go v0.28.0
+	github.com/lucas-clemente/quic-go v0.28.1
 	github.com/oschwald/maxminddb-golang v1.9.0
 )
 
